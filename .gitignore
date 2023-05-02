@@ -1,2 +1,2 @@
 # Ignore res.json since this has ID and Token info for Oanda Account
-ress.json
+res.json
