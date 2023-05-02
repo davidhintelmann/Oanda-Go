@@ -1,6 +1,6 @@
 # Query Oanda's REST-V20 API with Go
 
-This repo contains go code for querying Oandas API for Forex price info. One could also set up a demo account to trade
+This repo contains go code for querying Oanda's API for Forex price info. One could also set up a demo account to trade
 
 ***WARNING:*** This is for educational purposes only.
 
@@ -24,10 +24,10 @@ Taken from [Oanda's REST V-20 API](https://developer.oanda.com/rest-live-v20/int
 3. Modify the `res_edit.json` file in this repo's root directory with `ID` and `Token` obtained in the second step
    - rename `res_edit.json` to `res.json` for go code to work correctly
 
-Once the above is satisfied you can get this repo with:
+Once the above is satisfied you can get the functions in this repo with:
 
-    $ go get github.com/davidhintelmann/Oanda-Go
+    go get github.com/davidhintelmann/Oanda-Go/restful
 
-and then install with:
+Then import in your `main.go` (or any go file) with 
 
-    $ go install github.com/davidhintelmann/Oanda-Go
+    import "github.com/davidhintelmann/Oanda-Go/restful"
