@@ -20,23 +20,25 @@ type Account struct {
 type Metadata struct {
 	Instrument  string `json:"instrument"`
 	Granularity string `json:"granularity"`
-	Candles     []struct {
-		Complete bool   `json:"complete"`
-		Volume   int    `json:"volume"`
-		Time     string `json:"time"`
-		Bid      struct {
-			O string `json:"o"`
-			H string `json:"h"`
-			L string `json:"l"`
-			C string `json:"c"`
-		} `json:"bid"`
-		Ask struct {
-			O string `json:"o"`
-			H string `json:"h"`
-			L string `json:"l"`
-			C string `json:"c"`
-		} `json:"ask"`
-	} `json:"candles"`
+	Candles     OHLC   `json:"candles"`
+}
+
+type OHLC []struct {
+	Complete bool   `json:"complete"`
+	Volume   int    `json:"volume"`
+	Time     string `json:"time"`
+	Bid      struct {
+		O string `json:"o"`
+		H string `json:"h"`
+		L string `json:"l"`
+		C string `json:"c"`
+	} `json:"bid"`
+	Ask struct {
+		O string `json:"o"`
+		H string `json:"h"`
+		L string `json:"l"`
+		C string `json:"c"`
+	} `json:"ask"`
 }
 
 // GetIdToken function will return id & token
@@ -106,7 +108,9 @@ func GetCandlesBA(instrument, granularity, token string, display bool) (*Metadat
 	q.Add("price", "BA")
 	// encore the url and print it
 	req.URL.RawQuery = q.Encode()
-	fmt.Println(req.URL.String())
+
+	// print string to console for debugging
+	// fmt.Println(req.URL.String())
 
 	response, err := client.Do(req)
 
@@ -133,9 +137,25 @@ func GetCandlesBA(instrument, granularity, token string, display bool) (*Metadat
 	// if display parameter is true for GetCandlesBA() func
 	// then print the get response
 	if display {
-		fmt.Printf("Instrument: %s\n", candles.Instrument)
-		fmt.Printf("Granularity: %s\n", candles.Granularity)
-		fmt.Printf("Candles: %v\n", candles.Candles)
+		candle_count := len(candles.Candles)
+		most_recent_candle := &candles.Candles[candle_count-1]
+		fmt.Println()
+		fmt.Printf("Instrument: \t\t%s\n", candles.Instrument)
+		fmt.Printf("Granularity: \t\t%s\n", candles.Granularity)
+		fmt.Printf("Candles - Count: \t%v\n", candle_count)
+		fmt.Printf("Candles - Complete: \t%t\n", most_recent_candle.Complete)
+		fmt.Printf("Candles - Volume: \t%v\n", most_recent_candle.Volume)
+		fmt.Printf("Candles - Time: \t%s\n", most_recent_candle.Time)
+		fmt.Println("\t- Bid:")
+		fmt.Printf("\t\tOpen: \t%s\n", most_recent_candle.Bid.O)
+		fmt.Printf("\t\tHigh: \t%s\n", most_recent_candle.Bid.H)
+		fmt.Printf("\t\tLow: \t%s\n", most_recent_candle.Bid.L)
+		fmt.Printf("\t\tClose: \t%s\n", most_recent_candle.Bid.C)
+		fmt.Println("\t- Ask:")
+		fmt.Printf("\t\tOpen: \t%s\n", most_recent_candle.Ask.O)
+		fmt.Printf("\t\tHigh: \t%s\n", most_recent_candle.Ask.H)
+		fmt.Printf("\t\tLow: \t%s\n", most_recent_candle.Ask.L)
+		fmt.Printf("\t\tClose: \t%s\n", most_recent_candle.Ask.C)
 	}
 
 	return &candles, err
