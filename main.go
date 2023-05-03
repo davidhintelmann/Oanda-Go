@@ -16,8 +16,8 @@ func main() {
 	log.SetFlags(log.Ldate | log.Lshortfile)
 
 	// Get ID and Token for Oanda Account
-	id_token, err := restful.GetIdToken(account_json_path, false)
-	_, token := id_token.Account.ID, id_token.Account.Token
+	idToken, err := restful.GetIdToken(account_json_path, false)
+	_, token := idToken.Account.ID, idToken.Account.Token
 	if err != nil {
 		log.Fatal("error during GetIdToken(): ", err)
 	}

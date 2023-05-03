@@ -112,11 +112,15 @@ func GetCandlesBA(instrument, granularity, token string, display bool) (*Metadat
 	// print string to console for debugging
 	// fmt.Println(req.URL.String())
 
+	// time duration of request
+	queryStart := time.Now()
 	response, err := client.Do(req)
 
 	if err != nil {
 		return nil, fmt.Errorf("Got error %s", err.Error())
 	}
+	queryEnd := time.Now()
+	queryDuration := queryEnd.Sub(queryStart)
 	defer response.Body.Close()
 
 	// response body is []byte
@@ -138,24 +142,24 @@ func GetCandlesBA(instrument, granularity, token string, display bool) (*Metadat
 	// then print the get response
 	if display {
 		candle_count := len(candles.Candles)
-		most_recent_candle := &candles.Candles[candle_count-1]
-		fmt.Println()
+		mostRecentCandle := &candles.Candles[candle_count-1]
+		fmt.Printf("Get Request Duration: %v\n", queryDuration)
 		fmt.Printf("Instrument: \t\t%s\n", candles.Instrument)
 		fmt.Printf("Granularity: \t\t%s\n", candles.Granularity)
 		fmt.Printf("Candles - Count: \t%v\n", candle_count)
-		fmt.Printf("Candles - Complete: \t%t\n", most_recent_candle.Complete)
-		fmt.Printf("Candles - Volume: \t%v\n", most_recent_candle.Volume)
-		fmt.Printf("Candles - Time: \t%s\n", most_recent_candle.Time)
+		fmt.Printf("Candles - Complete: \t%t\n", mostRecentCandle.Complete)
+		fmt.Printf("Candles - Volume: \t%v\n", mostRecentCandle.Volume)
+		fmt.Printf("Candles - Time: \t%s\n", mostRecentCandle.Time)
 		fmt.Println("\t- Bid:")
-		fmt.Printf("\t\tOpen: \t%s\n", most_recent_candle.Bid.O)
-		fmt.Printf("\t\tHigh: \t%s\n", most_recent_candle.Bid.H)
-		fmt.Printf("\t\tLow: \t%s\n", most_recent_candle.Bid.L)
-		fmt.Printf("\t\tClose: \t%s\n", most_recent_candle.Bid.C)
+		fmt.Printf("\t\tOpen: \t%s\n", mostRecentCandle.Bid.O)
+		fmt.Printf("\t\tHigh: \t%s\n", mostRecentCandle.Bid.H)
+		fmt.Printf("\t\tLow: \t%s\n", mostRecentCandle.Bid.L)
+		fmt.Printf("\t\tClose: \t%s\n", mostRecentCandle.Bid.C)
 		fmt.Println("\t- Ask:")
-		fmt.Printf("\t\tOpen: \t%s\n", most_recent_candle.Ask.O)
-		fmt.Printf("\t\tHigh: \t%s\n", most_recent_candle.Ask.H)
-		fmt.Printf("\t\tLow: \t%s\n", most_recent_candle.Ask.L)
-		fmt.Printf("\t\tClose: \t%s\n", most_recent_candle.Ask.C)
+		fmt.Printf("\t\tOpen: \t%s\n", mostRecentCandle.Ask.O)
+		fmt.Printf("\t\tHigh: \t%s\n", mostRecentCandle.Ask.H)
+		fmt.Printf("\t\tLow: \t%s\n", mostRecentCandle.Ask.L)
+		fmt.Printf("\t\tClose: \t%s\n", mostRecentCandle.Ask.C)
 	}
 
 	return &candles, err
