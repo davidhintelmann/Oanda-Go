@@ -46,10 +46,14 @@ type OHLC []struct {
 // res.json file, one can get these at
 // https://fxtrade.oanda.com/your_account/fxtrade/register/gate?utm_source=oandaapi&utm_medium=link&utm_campaign=devportaldocs_demo
 func GetIdToken(file_path string, display bool) (*Account, error) {
+	log.SetFlags(log.Ldate | log.Lshortfile)
 	jsonFile, err := os.Open(file_path)
 
+	// change log.Fatal to log.Print for resful_test.go to work
+	// specifically the TestGetIdTokenInvalidPath() test function
 	if err != nil {
-		log.Fatal("error opening json file: ", err)
+		log.Print("error opening json file: ", err)
+		return nil, err
 	}
 
 	// defer the closing of our jsonFile so that we can parse it later on
@@ -57,6 +61,10 @@ func GetIdToken(file_path string, display bool) (*Account, error) {
 
 	// read our opened jsonFile as a byte array.
 	byteValue, _ := ioutil.ReadAll(jsonFile)
+	if err != nil {
+		log.Print("error during ioutil.ReadAll(jsonFile): ", err)
+		return nil, err
+	}
 
 	// we initialize our Account variable
 	var account Account
@@ -65,8 +73,11 @@ func GetIdToken(file_path string, display bool) (*Account, error) {
 	// jsonFile's content into 'account' which we defined above
 	err = json.Unmarshal(byteValue, &account)
 
+	// change log.Fatal to log.Print for resful_test.go to work
+	// specifically the TestGetIdTokenInvalidPath() test function
 	if err != nil {
-		log.Fatal("error unmarshaling json: ", err)
+		log.Print("error unmarshaling json: ", err)
+		return nil, err
 	}
 	// Print the account ID and Token to the console
 	// if display parameter is true
