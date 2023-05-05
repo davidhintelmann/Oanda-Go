@@ -1,6 +1,8 @@
 package restful
 
 import (
+	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -39,6 +41,29 @@ type OHLC []struct {
 		L string `json:"l"`
 		C string `json:"c"`
 	} `json:"ask"`
+}
+
+type Stream struct {
+	Type string `json:"type"`
+	Time string `json:"time"`
+	Bids [1]struct {
+		Price     string `json:"price"`
+		Liquidity int64  `json:"liquidity"`
+	} `json:"bids"`
+	Asks [1]struct {
+		Price     string `json:"price"`
+		Liquidity int64  `json:"liquidity"`
+	} `json:"asks"`
+	CloseOutBid string `json:"closeoutbid"`
+	CloseOutAsk string `json:"closeoutask"`
+	Status      string `json:"status"`
+	Tradeable   bool   `json:"tradeable"`
+	Instrument  string `json:"instrument"`
+}
+
+type HeartBeat struct {
+	Type string `json:"type"`
+	Time string `json:"time"`
 }
 
 // GetIdToken function will return id & token
@@ -117,7 +142,7 @@ func GetCandlesBA(instrument, granularity, token string, display bool) (*Metadat
 	q := req.URL.Query()
 	q.Add("granularity", granularity)
 	q.Add("price", "BA")
-	// encore the url and print it
+	// encore the url
 	req.URL.RawQuery = q.Encode()
 
 	// print string to console for debugging
@@ -174,4 +199,130 @@ func GetCandlesBA(instrument, granularity, token string, display bool) (*Metadat
 	}
 
 	return &candles, err
+}
+
+// Get JSON Stream for Pricing endpoint
+// Parameters requires list of instruments, token, and id
+// Returns Bid/Ask
+// https://developer.oanda.com/rest-live-v20/pricing-ep/
+func GetStream(ctx context.Context, conn *sql.DB, instrument string, token string, id string, display bool) {
+	streamUrl := fmt.Sprintf("https://stream-fxpractice.oanda.com/v3/accounts/%s/pricing/stream", id)
+
+	// declare http client request
+	// no timeout due to endpoint being a data stream
+	// unless idle connection
+	tr := &http.Transport{
+		MaxConnsPerHost: 2,
+		MaxIdleConns:    2,
+		IdleConnTimeout: 30 * time.Second,
+	}
+	client := &http.Client{Transport: tr}
+
+	// preapre http get request with url
+	req, err := http.NewRequest("GET", streamUrl, nil)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// set headers for get request
+	// check Oandas Best Practices for guidance https://developer.oanda.com/rest-live-v20/best-practices/
+	// and check their pricing endpoint for streaming https://developer.oanda.com/rest-live-v20/pricing-ep/
+	req.Header.Set("Content-Type", "application/octet-stream")
+	req.Header.Add("Authorization", "Bearer "+token)
+	req.Header.Add("Accept-Datetime-Format", "RFC3339")
+	req.Header.Add("Connection", "Keep-Alive")
+
+	// query parameters for get request
+	q := req.URL.Query()
+	q.Add("instruments", instrument)
+	// Flag that enables/disables the sending of a
+	// pricing snapshot when initially connecting to the stream.
+	// [default=True]
+	q.Add("snapshot", "True")
+	// Flag that enables the inclusion of the
+	// homeConversions field in the returned response.
+	// An entry will be returned for each currency
+	// in the set of all base and quote currencies
+	// present in the requested instruments list.
+	// [default=False]
+	q.Add("includeHomeConversions", "False")
+	// encore the url and print it
+	req.URL.RawQuery = q.Encode()
+
+	// print string to console for debugging
+	fmt.Println(req.URL.String())
+
+	// Send the GET Request
+	response, err := client.Do(req)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	defer response.Body.Close()
+
+	// response body is []byte
+	//body, err := ioutil.ReadAll(response.Body)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// dec := json.NewDecoder(strings.NewReader(body))
+	dec := json.NewDecoder(response.Body)
+	//dec := json.NewDecoder(bytes.NewReader(body))
+
+	for {
+		var tick Stream
+		if err := dec.Decode(&tick); err != nil {
+			log.Fatal(err)
+		}
+		if tick.Type != "PRICE" && tick.Instrument != "" && display == true {
+			fmt.Printf("Type: %s\n", tick.Type)
+			fmt.Printf("Time: %s\n", tick.Time)
+			fmt.Println("Bids:")
+			fmt.Printf("\tPrice: %s\n", tick.Bids[0].Price)
+			fmt.Printf("\tLiquidity: %d\n", tick.Bids[0].Liquidity)
+			fmt.Println("Ask:")
+			fmt.Printf("\tPrice: %s\n", tick.Asks[0].Price)
+			fmt.Printf("\tLiquidity: %d\n", tick.Asks[0].Liquidity)
+			fmt.Printf("Close Out Bid: %s\n", tick.CloseOutBid)
+			fmt.Printf("Close Out Ask: %s\n", tick.CloseOutAsk)
+			fmt.Printf("Status: %s\n", tick.Status)
+			fmt.Printf("Tradeable: %t\n", tick.Tradeable)
+			fmt.Printf("Instrument: %s\n", tick.Instrument)
+			// err = json.Unmarshal(body, &candles)
+		} else if tick.Type == "HEARTBEAT" && display == true {
+			fmt.Printf("Type: %s, Time: %s\n", tick.Type, tick.Time)
+		}
+
+		if tick.Type == "PRICE" && tick.Instrument != "" && display == false {
+			// Microsoft SQL does not allow boolean values
+			// convert to 0 or 1 (bit type) instead
+			// where 1=true, and 0=false
+			var tradeable int
+			if tick.Tradeable == true {
+				tradeable = 1
+			} else {
+				tradeable = 0
+			}
+			// Insert into PostNames Table in the Gin-Test database
+			query := `INSERT INTO [Oanda-Stream].[dbo].[Stream] VALUES ('%s', '%s', '%s', %d, '%s', %d, '%s', '%s', '%s', %d, '%s');`
+			tsql := fmt.Sprintf(query, tick.Type, tick.Time, tick.Bids[0].Price,
+				tick.Bids[0].Liquidity, tick.Asks[0].Price, tick.Asks[0].Liquidity,
+				tick.CloseOutBid, tick.CloseOutAsk, tick.Status, tradeable, tick.Instrument)
+			// Execute query
+			_, err = conn.QueryContext(ctx, tsql)
+		} else if tick.Type == "HEARTBEAT" && display == false {
+			fmt.Printf("%s, Time: %s\n", tick.Type, tick.Time)
+			query := `INSERT INTO [Oanda-Stream].[dbo].[Heartbeats] VALUES ('%s', '%s');`
+			tsql := fmt.Sprintf(query, tick.Type, tick.Time)
+			// Execute query
+			_, err = conn.QueryContext(ctx, tsql)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
 }
