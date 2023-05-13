@@ -151,9 +151,10 @@ func GetCandlesBA(instrument, granularity, token string, display bool) (*Metadat
 	// time duration of request
 	queryStart := time.Now()
 	response, err := client.Do(req)
-
 	if err != nil {
-		return nil, fmt.Errorf("Got error %s", err.Error())
+		return nil, fmt.Errorf("Got error %s\n", err.Error())
+	} else if response.StatusCode == 400 {
+		return nil, fmt.Errorf("400 error %s\n", err.Error())
 	}
 	queryEnd := time.Now()
 	queryDuration := queryEnd.Sub(queryStart)
@@ -205,7 +206,7 @@ func GetCandlesBA(instrument, granularity, token string, display bool) (*Metadat
 // Parameters requires list of instruments, token, and id
 // Returns Bid/Ask
 // https://developer.oanda.com/rest-live-v20/pricing-ep/
-func GetStream(ctx context.Context, conn *sql.DB, instrument string, token string, id string, display bool) {
+func GetStreamMSSQL(ctx context.Context, conn *sql.DB, instrument string, token string, id string, display bool) {
 	streamUrl := fmt.Sprintf("https://stream-fxpractice.oanda.com/v3/accounts/%s/pricing/stream", id)
 
 	// declare http client request

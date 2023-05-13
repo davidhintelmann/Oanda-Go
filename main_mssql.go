@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/davidhintelmann/Oanda-Go/restful"
+	_ "github.com/jackc/pgx/v5/pgxpool"
 )
 
 // must include ID and Token into
@@ -23,9 +24,9 @@ var trusted_connection, encrypt = true, true
 var conn *sql.DB
 
 // Use background context globally to pass between functions
-var ctx = context.Background()
+var ctx_mssql = context.Background()
 
-func main() {
+func main_mssql() {
 	// set log flags for date and script file with line number for where the error occurred
 	log.SetFlags(log.Ldate | log.Lshortfile)
 
@@ -39,13 +40,12 @@ func main() {
 	// GetCandlesBA function sends a GET request to Oanda's API
 	// set the display parameter to true to output OHLC data to the console
 	_, err = restful.GetCandlesBA("USD_CAD", "S5", token, true)
-	// candles := _.Candles
 	if err != nil {
 		log.Fatalf("error during GetCandlesBA(): %v", err)
 	}
 
 	// connect to local instance of Microsoft SQL
-	conn, err := restful.ConnectMSSQL(ctx, conn, driver, server, database, trusted_connection, encrypt)
+	conn, err := restful.ConnectMSSQL(ctx_mssql, conn, driver, server, database, trusted_connection, encrypt)
 
 	if err != nil {
 		log.Fatalf("error during ConnectMSSQL(): %v", err)
@@ -53,5 +53,5 @@ func main() {
 	defer conn.Close()
 
 	instrumentList := "USD_CAD,USD_JPY,USD_CHF,USD_HKD,USD_SGD,GBP_USD,NZD_USD,EUR_CAD,EUR_USD,EUR_GBP,EUR_AUD,EUR_JPY,AUD_CAD,AUD_USD,AUD_NZD,AUD_JPY,AUD_HKD,CAD_HKD,CAD_CHF,CAD_JPY,CAD_SGD"
-	restful.GetStream(ctx, conn, instrumentList, token, id, false)
+	restful.GetStreamMSSQL(ctx_mssql, conn, instrumentList, token, id, false)
 }

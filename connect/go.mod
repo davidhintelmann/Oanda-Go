@@ -1,12 +1,8 @@
-module github.com/davidhintelmann/Oanda-Go
+module github.com/davidhintelmann/Oanda-Go/connect
 
 go 1.20
 
-require (
-	github.com/davidhintelmann/Oanda-Go/connect v0.0.0-00010101000000-000000000000
-	github.com/davidhintelmann/Oanda-Go/restful v0.0.0-20230502064935-f78c4a4a6e15
-	github.com/jackc/pgx/v5 v5.3.1
-)
+require github.com/jackc/pgx/v5 v5.3.1
 
 require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect
@@ -16,5 +12,3 @@ require (
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 )
-
-replace github.com/davidhintelmann/Oanda-Go/connect => ./connect
