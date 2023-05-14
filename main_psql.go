@@ -23,7 +23,7 @@ const user, dbname, sslmode = "david", "GinTest", "disable"
 // at the end of 'ImportPassword_' function.
 // modify the return statement for the password of your PostgreSQL
 // user that is accessing your local instance
-var password = connect.ImportPassword()
+var password = connect.ImportPassword_() // delete underscore
 
 // use background context globally to pass between functions
 var ctx_psql = context.Background()
