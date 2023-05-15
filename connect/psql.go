@@ -1,3 +1,5 @@
+// This package is for connecting to a local instance
+// of PostgreSQL while acquiring FOREX data from Oanda.
 package connect
 
 import (
@@ -11,6 +13,9 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// struct for unmarshalling json data from Oanda's [Pricing - stream endpoint].
+//
+// [Pricing - stream endpoint]: https://developer.oanda.com/rest-live-v20/pricing-ep/
 type Stream struct {
 	Type string `json:"type"`
 	Time string `json:"time"`
@@ -29,11 +34,21 @@ type Stream struct {
 	Instrument  string `json:"instrument"`
 }
 
+// struct for unmarshalling json data from Oanda's [Pricing - stream endpoint].
+//
+// Note: every 5 seconds a heartbeat read by anyone connected to this endpoint to
+// let them know the connection is alive.
+//
+// [Pricing - stream endpoint]: https://developer.oanda.com/rest-live-v20/pricing-ep/
 type HeartBeat struct {
 	Type string `json:"type"`
 	Time string `json:"time"`
 }
 
+// Connect to local instance of PostgreSQL.
+//
+// Requires username, password, database name, and if ssl mode should use encryption
+// or not ("enable" or "disable")
 func ConnectPSQL(ctx context.Context, user string, password string, dbname string, sslmode string) (*pgxpool.Pool, error) {
 	// fmt.Print("Connecting to postgresql...\n")
 	connectionString := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=%s", user, password, dbname, sslmode)
@@ -48,6 +63,12 @@ func ConnectPSQL(ctx context.Context, user string, password string, dbname strin
 	return dbpool, nil
 }
 
+// Get JSON Stream for Pricing endpoint - returns live Bid/Ask.
+//   - Parameters requires list of instruments, token, and id
+//
+// See [Pricing - stream endpoint]
+//
+// [Pricing - stream endpoint]: https://developer.oanda.com/rest-live-v20/pricing-ep/
 func GetStreamPSQL(ctx context.Context, conn *pgxpool.Pool, password string, instrument string, token string, id string, display bool) {
 	streamUrl := fmt.Sprintf("https://stream-fxpractice.oanda.com/v3/accounts/%s/pricing/stream", id)
 
