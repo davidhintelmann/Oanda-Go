@@ -1,3 +1,6 @@
+// This package is for querying [Oanda-V20] RESTful API.
+//
+// [Oanda-V20]: https://developer.oanda.com/rest-live-v20/introduction/
 package restful
 
 import (
@@ -12,6 +15,8 @@ import (
 	"time"
 )
 
+// struct for unmarshalling `res.json` file which
+// contains account information (i.e., id and token).
 type Account struct {
 	Account struct {
 		ID    string `json:"id"`
@@ -19,12 +24,18 @@ type Account struct {
 	} `json:"primary"`
 }
 
+// struct for unmarshalling metadata from Oanda's [Instrument - candles endpoint].
+//
+// [Instrument - candles endpoint]: https://developer.oanda.com/rest-live-v20/instrument-ep/
 type Metadata struct {
 	Instrument  string `json:"instrument"`
 	Granularity string `json:"granularity"`
 	Candles     OHLC   `json:"candles"`
 }
 
+// struct for unmarshalling FOREX OHLC data from Oanda's [Instrument - candles endpoint].
+//
+// [Instrument - candles endpoint]: https://developer.oanda.com/rest-live-v20/instrument-ep/
 type OHLC []struct {
 	Complete bool   `json:"complete"`
 	Volume   int    `json:"volume"`
@@ -43,6 +54,9 @@ type OHLC []struct {
 	} `json:"ask"`
 }
 
+// struct for unmarshalling json data from Oanda's [Pricing - stream endpoint].
+//
+// [Pricing - stream endpoint]: https://developer.oanda.com/rest-live-v20/pricing-ep/
 type Stream struct {
 	Type string `json:"type"`
 	Time string `json:"time"`
@@ -61,6 +75,12 @@ type Stream struct {
 	Instrument  string `json:"instrument"`
 }
 
+// struct for unmarshalling json data from Oanda's [Pricing - stream endpoint].
+//
+// Note: every 5 seconds a heartbeat read by anyone connected to this endpoint to
+// let them know the connection is alive.
+//
+// [Pricing - stream endpoint]: https://developer.oanda.com/rest-live-v20/pricing-ep/
 type HeartBeat struct {
 	Type string `json:"type"`
 	Time string `json:"time"`
@@ -68,8 +88,10 @@ type HeartBeat struct {
 
 // GetIdToken function will return id & token
 // first you must enter your ID and Token into
-// res.json file, one can get these at
-// https://fxtrade.oanda.com/your_account/fxtrade/register/gate?utm_source=oandaapi&utm_medium=link&utm_campaign=devportaldocs_demo
+// res.json file, one can get these from
+// Oanda's [Demo Account].
+//
+// [Demo Account]: https://fxtrade.oanda.com/your_account/fxtrade/register/gate?utm_source=oandaapi&utm_medium=link&utm_campaign=devportaldocs_demo
 func GetIdToken(file_path string, display bool) (*Account, error) {
 	log.SetFlags(log.Ldate | log.Lshortfile)
 	jsonFile, err := os.Open(file_path)
@@ -114,8 +136,12 @@ func GetIdToken(file_path string, display bool) (*Account, error) {
 	return &account, err
 }
 
-// Get Request for Instrument endpoint - Returns OHLC Bid/Ask
-// https://developer.oanda.com/rest-live-v20/instrument-ep/
+// Get Request for Instrument endpoint - returns historical OHLC Bid/Ask.
+//   - Parameters requires instrument symbol, token, and granularity (i.e., 'S5' for 5 second candles)
+//
+// See [Instrument - candles endpoint]
+//
+// [Instrument - candles endpoint]: https://developer.oanda.com/rest-live-v20/instrument-ep/
 func GetCandlesBA(instrument, granularity, token string, display bool) (*Metadata, error) {
 	url := "https://api-fxpractice.oanda.com/v3/instruments/" + instrument + "/candles"
 
@@ -202,10 +228,12 @@ func GetCandlesBA(instrument, granularity, token string, display bool) (*Metadat
 	return &candles, err
 }
 
-// Get JSON Stream for Pricing endpoint
-// Parameters requires list of instruments, token, and id
-// Returns Bid/Ask
-// https://developer.oanda.com/rest-live-v20/pricing-ep/
+// Get JSON Stream for Pricing endpoint - returns live Bid/Ask.
+//   - Parameters requires list of instruments, token, and id
+//
+// See [Pricing - stream endpoint]
+//
+// [Pricing - stream endpoint]: https://developer.oanda.com/rest-live-v20/pricing-ep/
 func GetStreamMSSQL(ctx context.Context, conn *sql.DB, instrument string, token string, id string, display bool) {
 	streamUrl := fmt.Sprintf("https://stream-fxpractice.oanda.com/v3/accounts/%s/pricing/stream", id)
 

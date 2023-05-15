@@ -1,3 +1,5 @@
+// This package is for connecting to a local instance
+// of Microsoft SQL while acquiring FOREX data from Oanda.
 package restful
 
 import (
@@ -10,6 +12,14 @@ import (
 	_ "github.com/microsoft/go-mssqldb/sharedmemory"
 )
 
+// Connect to local instance of Microsoft SQL.
+//
+// Requires a *sql.DB connection, mssql driver, database name, and if ssl mode should use encryption
+// or not ("true" or "false").
+//
+// Driver can be found at [Microsoft's repo]
+//
+// [Microsoft's repo]: "github.com/microsoft/go-mssqldb"
 func ConnectMSSQL(
 	ctx context.Context,
 	conn *sql.DB,
