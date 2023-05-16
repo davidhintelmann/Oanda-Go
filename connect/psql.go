@@ -36,8 +36,8 @@ type Stream struct {
 
 // struct for unmarshalling json data from Oanda's [Pricing - stream endpoint].
 //
-// Note: every 5 seconds a heartbeat read by anyone connected to this endpoint to
-// let them know the connection is alive.
+// Note: every 5 seconds a 'heartbeat' is sent from this endpoint to
+// let you know the connection is still alive.
 //
 // [Pricing - stream endpoint]: https://developer.oanda.com/rest-live-v20/pricing-ep/
 type HeartBeat struct {

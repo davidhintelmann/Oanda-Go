@@ -19,7 +19,7 @@ import (
 //
 // Driver can be found at [Microsoft's repo]
 //
-// [Microsoft's repo]: "github.com/microsoft/go-mssqldb"
+// [Microsoft's repo]: https://github.com/microsoft/go-mssqldb
 func ConnectMSSQL(
 	ctx context.Context,
 	conn *sql.DB,
