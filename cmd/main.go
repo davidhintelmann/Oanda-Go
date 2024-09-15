@@ -20,60 +20,62 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package OandaGo
+// OandaGo package is a wrapper API for [Oanda-V20] RESTful API.
+// Currently this wrapper API only covers two endpoints:
+//
+//  1. Get request for [Instrument - candles endpoint] which returns
+//     historical OHLC Bid/Ask.
+//
+//     - Parameters requires instrument symbol, token, and granularity (i.e., 'S5' for 5 second candles)
+//
+//  2. Get JSON Stream for [Pricing - stream endpoint]
+//     which returns live Bid/Ask.
+//
+//     - Parameters requires list of instruments, token, and id
+//
+// Don't forget to check Oanda's [Best Practices] before querying any
+// of their endpoints.
+//
+// Additionally this package can be used with either Micrsoft SQL or
+// PostgreSQL for inserting data and querying a local database instead
+// of querying Oanda's API each time one needs historical data. You can also
+// insert data from the live stream into a database.
+//
+// Note: `main_psql.go` is for using PostgreSQL and `main_mssql.go` is
+// for using Microsoft SQL as your database.
+//
+// [Oanda-V20]: https://developer.oanda.com/rest-live-v20/introduction/
+// [Instrument - candles endpoint]: https://developer.oanda.com/rest-live-v20/instrument-ep/
+// [Pricing - stream endpoint]: https://developer.oanda.com/rest-live-v20/pricing-ep/
+// [Best Practices]: https://developer.oanda.com/rest-live-v20/best-practices/
+package main
 
 import (
-	"context"
-	"database/sql"
 	"log"
 
 	"github.com/davidhintelmann/Oanda-Go/restful"
-	_ "github.com/jackc/pgx/v5/pgxpool"
 )
 
 // must include ID and Token into
 // res.json file, one can get these at
 // https://fxtrade.oanda.com/your_account/fxtrade/register/gate?utm_source=oandaapi&utm_medium=link&utm_campaign=devportaldocs_demo
-const account_json_path string = "./res.json"
+const accountJSON string = "./res.json"
 
-// server, database, driver configuration
-var server, database, driver = "lpc:localhost", "Oanda-Stream", "mssql" // "sqlserver" or "mssql"
-
-// trusted connection, and encryption configuraiton
-var trusted_connection, encrypt = true, true
-
-// db is global variable to pass between functions
-var conn *sql.DB
-
-// Use background context globally to pass between functions
-var ctx_mssql = context.Background()
-
-func main_mssql() {
+func main() {
 	// set log flags for date and script file with line number for where the error occurred
 	log.SetFlags(log.Ldate | log.Lshortfile)
 
 	// Get ID and Token for Oanda Account
-	idToken, err := restful.GetIdToken(account_json_path, false)
-	id, token := idToken.Account.ID, idToken.Account.Token
+	idToken, err := restful.GetIdToken(accountJSON, false)
+	_, token := idToken.Account.ID, idToken.Account.Token
 	if err != nil {
 		log.Fatalf("error during GetIdToken(): %v", err)
 	}
-
 	// GetCandlesBA function sends a GET request to Oanda's API
 	// set the display parameter to true to output OHLC data to the console
 	_, err = restful.GetCandlesBA("USD_CAD", "S5", token, true)
+	// candles := _.Candles
 	if err != nil {
 		log.Fatalf("error during GetCandlesBA(): %v", err)
 	}
-
-	// connect to local instance of Microsoft SQL
-	conn, err := restful.ConnectMSSQL(ctx_mssql, conn, driver, server, database, trusted_connection, encrypt)
-
-	if err != nil {
-		log.Fatalf("error during ConnectMSSQL(): %v", err)
-	}
-	defer conn.Close()
-
-	instrumentList := "USD_CAD,USD_JPY,USD_CHF,USD_HKD,USD_SGD,GBP_USD,NZD_USD,EUR_CAD,EUR_USD,EUR_GBP,EUR_AUD,EUR_JPY,AUD_CAD,AUD_USD,AUD_NZD,AUD_JPY,AUD_HKD,CAD_HKD,CAD_CHF,CAD_JPY,CAD_SGD"
-	restful.GetStreamMSSQL(ctx_mssql, conn, instrumentList, token, id, false)
 }

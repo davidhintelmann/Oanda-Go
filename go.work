@@ -1,9 +1,0 @@
-go 1.20
-
-use (
-	.
-	./connect
-	./restful
-)
-
-replace github.com/davidhintelmann/oanda-go/restful => ./restful

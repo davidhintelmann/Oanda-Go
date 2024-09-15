@@ -91,3 +91,28 @@ Error: %v`, err)
 		}
 	}
 }
+
+// must include ID and Token into
+// res.json file, one can get these at
+// https://fxtrade.oanda.com/your_account/fxtrade/register/gate?utm_source=oandaapi&utm_medium=link&utm_campaign=devportaldocs_demo
+const account_path string = "./res.json"
+
+func Example_candles() {
+	// set log flags for date and script file with line number for where the error occurred
+	log.SetFlags(log.Ldate | log.Lshortfile)
+
+	// Get ID and Token for Oanda Account
+	idToken, err := GetIdToken(account_path, false)
+	_, token := idToken.Account.ID, idToken.Account.Token
+	if err != nil {
+		log.Fatalf("error during GetIdToken(): %v", err)
+	}
+	// GetCandlesBA function sends a GET request to Oanda's API
+	// set the display parameter to true to output OHLC data to the console
+	_, err = GetCandlesBA("USD_CAD", "S5", token, true)
+	// candles := _.Candles
+	if err != nil {
+		log.Fatalf("error during GetCandlesBA(): %v", err)
+	}
+
+}

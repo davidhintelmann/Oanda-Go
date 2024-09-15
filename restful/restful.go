@@ -1,6 +1,31 @@
-// This package is for querying [Oanda-V20] RESTful API.
+// restful package is a wrapper API for [Oanda-V20] RESTful API.
+// Currently this wrapper API only covers two endpoints:
+//
+//  1. Get request for [Instrument - candles endpoint] which returns
+//     historical OHLC Bid/Ask.
+//
+//     - Parameters requires instrument symbol, token, and granularity (i.e., 'S5' for 5 second candles)
+//
+//  2. Get JSON Stream for [Pricing - stream endpoint]
+//     which returns live Bid/Ask.
+//
+//     - Parameters requires list of instruments, token, and id
+//
+// Don't forget to check Oanda's [Best Practices] before querying any
+// of their endpoints.
+//
+// Additionally this package can be used with either Micrsoft SQL or
+// PostgreSQL for inserting data and querying a local database instead
+// of querying Oanda's API each time one needs historical data. You can also
+// insert data from the live stream into a database.
+//
+// Note: `main_psql.go` is for using PostgreSQL and `main_mssql.go` is
+// for using Microsoft SQL as your database.
 //
 // [Oanda-V20]: https://developer.oanda.com/rest-live-v20/introduction/
+// [Instrument - candles endpoint]: https://developer.oanda.com/rest-live-v20/instrument-ep/
+// [Pricing - stream endpoint]: https://developer.oanda.com/rest-live-v20/pricing-ep/
+// [Best Practices]: https://developer.oanda.com/rest-live-v20/best-practices/
 package restful
 
 import (
@@ -8,7 +33,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -107,7 +132,7 @@ func GetIdToken(file_path string, display bool) (*Account, error) {
 	defer jsonFile.Close()
 
 	// read our opened jsonFile as a byte array.
-	byteValue, _ := ioutil.ReadAll(jsonFile)
+	byteValue, err := io.ReadAll(jsonFile)
 	if err != nil {
 		log.Print("error during ioutil.ReadAll(jsonFile): ", err)
 		return nil, err
@@ -154,7 +179,7 @@ func GetCandlesBA(instrument, granularity, token string, display bool) (*Metadat
 	req, err := http.NewRequest("GET", url, nil)
 
 	if err != nil {
-		return nil, fmt.Errorf("Got error %s", err.Error())
+		return nil, fmt.Errorf("error: %s", err.Error())
 	}
 
 	// set headers for get request
@@ -178,16 +203,16 @@ func GetCandlesBA(instrument, granularity, token string, display bool) (*Metadat
 	queryStart := time.Now()
 	response, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("Got error %s\n", err.Error())
+		return nil, fmt.Errorf("error: %s", err.Error())
 	} else if response.StatusCode == 400 {
-		return nil, fmt.Errorf("400 error %s\n", err.Error())
+		return nil, fmt.Errorf("400 error: %d", response.StatusCode)
 	}
 	queryEnd := time.Now()
 	queryDuration := queryEnd.Sub(queryStart)
 	defer response.Body.Close()
 
 	// response body is []byte
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 
 	if err != nil {
 		log.Fatalln(err)
@@ -307,7 +332,7 @@ func GetStreamMSSQL(ctx context.Context, conn *sql.DB, instrument string, token 
 		if err := dec.Decode(&tick); err != nil {
 			log.Fatal(err)
 		}
-		if tick.Type != "PRICE" && tick.Instrument != "" && display == true {
+		if tick.Type != "PRICE" && tick.Instrument != "" && display {
 			fmt.Printf("Type: %s\n", tick.Type)
 			fmt.Printf("Time: %s\n", tick.Time)
 			fmt.Println("Bids:")
@@ -322,16 +347,16 @@ func GetStreamMSSQL(ctx context.Context, conn *sql.DB, instrument string, token 
 			fmt.Printf("Tradeable: %t\n", tick.Tradeable)
 			fmt.Printf("Instrument: %s\n", tick.Instrument)
 			// err = json.Unmarshal(body, &candles)
-		} else if tick.Type == "HEARTBEAT" && display == true {
+		} else if tick.Type == "HEARTBEAT" && display {
 			fmt.Printf("Type: %s, Time: %s\n", tick.Type, tick.Time)
 		}
 
-		if tick.Type == "PRICE" && tick.Instrument != "" && display == false {
+		if tick.Type == "PRICE" && tick.Instrument != "" && !display {
 			// Microsoft SQL does not allow boolean values
 			// convert to 0 or 1 (bit type) instead
 			// where 1=true, and 0=false
 			var tradeable int
-			if tick.Tradeable == true {
+			if tick.Tradeable {
 				tradeable = 1
 			} else {
 				tradeable = 0
@@ -343,7 +368,10 @@ func GetStreamMSSQL(ctx context.Context, conn *sql.DB, instrument string, token 
 				tick.CloseOutBid, tick.CloseOutAsk, tick.Status, tradeable, tick.Instrument)
 			// Execute query
 			_, err = conn.QueryContext(ctx, tsql)
-		} else if tick.Type == "HEARTBEAT" && display == false {
+			if err != nil {
+				log.Fatalln(err)
+			}
+		} else if tick.Type == "HEARTBEAT" && !display {
 			fmt.Printf("%s, Time: %s\n", tick.Type, tick.Time)
 			query := `INSERT INTO [Oanda-Stream].[dbo].[Heartbeats] VALUES ('%s', '%s');`
 			tsql := fmt.Sprintf(query, tick.Type, tick.Time)
