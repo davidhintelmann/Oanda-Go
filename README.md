@@ -1,3 +1,4 @@
+The `og` branch is the original code that was contained in this repo. Development for `main` and `dev` branch has shifted towards creating a go lang client for querying Oanda endpoints.
 # Query Oanda's REST-V20 API with Go
 
 This repo contains go code for querying Oanda's API for Forex price info. One could also set up a demo account to trade
