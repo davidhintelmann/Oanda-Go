@@ -1,8 +1,5 @@
 # Ignore res.json since this has ID and Token info for Oanda Account
 res.json
 
-# Ignore password for connecting to a local instance of PostgreSQL
-connect/password.go
-
 # Ignore Jupyter Notebook
 *.ipynb
