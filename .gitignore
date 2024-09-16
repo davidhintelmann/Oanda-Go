@@ -3,3 +3,6 @@ res.json
 
 # Ignore password for connecting to a local instance of PostgreSQL
 connect/password.go
+
+# Ignore Jupyter Notebook
+*.ipynb
