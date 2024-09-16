@@ -118,7 +118,6 @@ func Example_candles() {
 	fmt.Println(data.Candles)
 	fmt.Println(data.Granularity)
 	fmt.Println(data.Instrument)
-	// fmt.Println(data.Candles[0].FormatTime("2006-01-02 03:04:05 PM MST"))
 	// Output:
 	// {true 1 2024-09-16T03:24:15.000000000Z {1.35733 1.35733 1.35733 1.35733} {1.35753 1.35753 1.35753 1.35753}}
 	// S5

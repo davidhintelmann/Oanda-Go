@@ -50,13 +50,8 @@ func GetAccounts(token string) (*AccountEndpoint, error) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+token)
 	req.Header.Add("Accept-Datetime-Format", "RFC3339")
-
-	// query parameters for get request
-	q := req.URL.Query()
-	// q.Add("granularity", granularity)
-	// q.Add("price", "BA")
-	// encore the url
-	req.URL.RawQuery = q.Encode()
+	// req.URL.RawQuery = req.URL.Query().Encode()
+	req.URL.Query().Encode()
 
 	response, err := client.Do(req)
 	if err != nil {
