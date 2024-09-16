@@ -1,11 +1,14 @@
-package restful
+package restful_test
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/davidhintelmann/Oanda-Go/restful"
 )
 
 func TestGetIdTokenValidPath(t *testing.T) {
@@ -35,7 +38,7 @@ Error: %v`, err)
 	// ie. that is the path that needs to work
 	pathNeedsToWork := "../res.json"
 	for _, b := range [2]bool{true, false} {
-		account, err := GetIdToken(pathNeedsToWork, b)
+		account, err := restful.GetIdToken(pathNeedsToWork, b)
 
 		if err != nil {
 			t.Fatalf(`Test for GetIdToken(file_path, display) produced an error: %v
@@ -82,7 +85,7 @@ Error: %v`, err)
 	// last element ("../LICENSE") in InvalidPaths works but unmarshaling json will fail
 	invalidPaths := [6]string{"res.json", "../../res.json", "../r.json", "../res.txt", "../LICENSE"}
 	for _, v := range invalidPaths {
-		_, err := GetIdToken(v, false)
+		_, err := restful.GetIdToken(v, false)
 
 		if err == nil {
 			t.Fatalf(`Test for GetIdToken(file_path, display) produced an error: %v
@@ -92,27 +95,33 @@ Error: %v`, err)
 	}
 }
 
-// must include ID and Token into
-// res.json file, one can get these at
-// https://fxtrade.oanda.com/your_account/fxtrade/register/gate?utm_source=oandaapi&utm_medium=link&utm_campaign=devportaldocs_demo
-const account_path string = "./res.json"
-
 func Example_candles() {
+	// must include ID and Token into
+	// res.json file, one can get these at
+	// https://fxtrade.oanda.com/your_account/fxtrade/register/gate?utm_source=oandaapi&utm_medium=link&utm_campaign=devportaldocs_demo
+	var account_path string = "../res.json"
+
 	// set log flags for date and script file with line number for where the error occurred
 	log.SetFlags(log.Ldate | log.Lshortfile)
 
 	// Get ID and Token for Oanda Account
-	idToken, err := GetIdToken(account_path, false)
-	_, token := idToken.Account.ID, idToken.Account.Token
+	idToken, err := restful.GetIdToken(account_path, false)
 	if err != nil {
 		log.Fatalf("error during GetIdToken(): %v", err)
 	}
 	// GetCandlesBA function sends a GET request to Oanda's API
 	// set the display parameter to true to output OHLC data to the console
-	_, err = GetCandlesBA("USD_CAD", "S5", token, true)
-	// candles := _.Candles
+	data, err := restful.GetCandlesBA("USD_CAD", "S5", idToken.Account.Token, true)
 	if err != nil {
 		log.Fatalf("error during GetCandlesBA(): %v", err)
 	}
-
+	fmt.Println(data.Candles)
+	fmt.Println(data.Granularity)
+	fmt.Println(data.Instrument)
+	// fmt.Println(data.Candles[0].FormatTime("2006-01-02 03:04:05 PM MST"))
+	// Output:
+	// {true 1 2024-09-16T03:24:15.000000000Z {1.35733 1.35733 1.35733 1.35733} {1.35753 1.35753 1.35753 1.35753}}
+	// S5
+	// USD_CAD
+	// 2024-09-16 03:24:15 AM UTC
 }

@@ -20,7 +20,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-// OandaGo package is a wrapper API for [Oanda-V20] RESTful API.
+// Oanda-Go package is a wrapper API for [Oanda-V20] RESTful API.
 // Currently this wrapper API only covers two endpoints:
 //
 //  1. Get request for [Instrument - candles endpoint] which returns
@@ -36,14 +36,6 @@
 // Don't forget to check Oanda's [Best Practices] before querying any
 // of their endpoints.
 //
-// Additionally this package can be used with either Micrsoft SQL or
-// PostgreSQL for inserting data and querying a local database instead
-// of querying Oanda's API each time one needs historical data. You can also
-// insert data from the live stream into a database.
-//
-// Note: `main_psql.go` is for using PostgreSQL and `main_mssql.go` is
-// for using Microsoft SQL as your database.
-//
 // [Oanda-V20]: https://developer.oanda.com/rest-live-v20/introduction/
 // [Instrument - candles endpoint]: https://developer.oanda.com/rest-live-v20/instrument-ep/
 // [Pricing - stream endpoint]: https://developer.oanda.com/rest-live-v20/pricing-ep/
@@ -51,6 +43,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/davidhintelmann/Oanda-Go/restful"
@@ -59,23 +52,30 @@ import (
 // must include ID and Token into
 // res.json file, one can get these at
 // https://fxtrade.oanda.com/your_account/fxtrade/register/gate?utm_source=oandaapi&utm_medium=link&utm_campaign=devportaldocs_demo
-const accountJSON string = "./res.json"
+const accountJSON string = "../res.json"
 
 func main() {
 	// set log flags for date and script file with line number for where the error occurred
 	log.SetFlags(log.Ldate | log.Lshortfile)
 
 	// Get ID and Token for Oanda Account
-	idToken, err := restful.GetIdToken(accountJSON, false)
-	_, token := idToken.Account.ID, idToken.Account.Token
+	creds, err := restful.GetAllIdToken(accountJSON, false)
 	if err != nil {
 		log.Fatalf("error during GetIdToken(): %v", err)
 	}
+	token := creds.Account["umpa92"].Token
 	// GetCandlesBA function sends a GET request to Oanda's API
 	// set the display parameter to true to output OHLC data to the console
-	_, err = restful.GetCandlesBA("USD_CAD", "S5", token, true)
-	// candles := _.Candles
+	_, err = restful.GetCandlesBA("USD_CAD", "S5", token, false)
 	if err != nil {
 		log.Fatalf("error during GetCandlesBA(): %v", err)
 	}
+
+	fmt.Println(token)
+
+	accounts, err := restful.GetAccounts(token)
+	if err != nil {
+		log.Fatalf("error during GetCandlesBA(): %v", err)
+	}
+	fmt.Println(accounts.Account)
 }

@@ -14,14 +14,6 @@
 // Don't forget to check Oanda's [Best Practices] before querying any
 // of their endpoints.
 //
-// Additionally this package can be used with either Micrsoft SQL or
-// PostgreSQL for inserting data and querying a local database instead
-// of querying Oanda's API each time one needs historical data. You can also
-// insert data from the live stream into a database.
-//
-// Note: `main_psql.go` is for using PostgreSQL and `main_mssql.go` is
-// for using Microsoft SQL as your database.
-//
 // [Oanda-V20]: https://developer.oanda.com/rest-live-v20/introduction/
 // [Instrument - candles endpoint]: https://developer.oanda.com/rest-live-v20/instrument-ep/
 // [Pricing - stream endpoint]: https://developer.oanda.com/rest-live-v20/pricing-ep/
@@ -29,8 +21,6 @@
 package restful
 
 import (
-	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -40,13 +30,38 @@ import (
 	"time"
 )
 
-// struct for unmarshalling `res.json` file which
+// struct for unmarshalling primary account in `res.json` file which
 // contains account information (i.e., id and token).
+type PrimaryAccount struct {
+	Account Account `json:"primary"`
+}
+
 type Account struct {
-	Account struct {
-		ID    string `json:"id"`
-		Token string `json:"token"`
-	} `json:"primary"`
+	ID    string `json:"id"`
+	Token string `json:"token"`
+}
+
+// struct for unmarshalling all accounts in `res.json` file which
+// contains account information (i.e., id and token).
+type Credential struct {
+	ID    string `json:"id"`
+	Token string `json:"token"`
+}
+
+type Credentials struct {
+	Account map[string]Credential `json:"-"` // Dynamically handle all fields with the same structure
+}
+
+func (d *Credentials) UnmarshalJSON(data []byte) error {
+	// Unmarshal everything into a map[string]Credential
+	var rawMap map[string]Credential
+	if err := json.Unmarshal(data, &rawMap); err != nil {
+		return err
+	}
+
+	// Store the dynamically parsed fields
+	d.Account = rawMap
+	return nil
 }
 
 // struct for unmarshalling metadata from Oanda's [Instrument - candles endpoint].
@@ -55,28 +70,43 @@ type Account struct {
 type Metadata struct {
 	Instrument  string `json:"instrument"`
 	Granularity string `json:"granularity"`
-	Candles     OHLC   `json:"candles"`
+	Candles     []OHLC `json:"candles"`
 }
 
 // struct for unmarshalling FOREX OHLC data from Oanda's [Instrument - candles endpoint].
 //
 // [Instrument - candles endpoint]: https://developer.oanda.com/rest-live-v20/instrument-ep/
-type OHLC []struct {
+type OHLC struct {
 	Complete bool   `json:"complete"`
 	Volume   int    `json:"volume"`
 	Time     string `json:"time"`
-	Bid      struct {
-		O string `json:"o"`
-		H string `json:"h"`
-		L string `json:"l"`
-		C string `json:"c"`
-	} `json:"bid"`
-	Ask struct {
-		O string `json:"o"`
-		H string `json:"h"`
-		L string `json:"l"`
-		C string `json:"c"`
-	} `json:"ask"`
+	Bid      Bid    `json:"bid"`
+	Ask      Ask    `json:"ask"`
+}
+
+type Bid struct {
+	O string `json:"o"`
+	H string `json:"h"`
+	L string `json:"l"`
+	C string `json:"c"`
+}
+
+type Ask struct {
+	O string `json:"o"`
+	H string `json:"h"`
+	L string `json:"l"`
+	C string `json:"c"`
+}
+
+/*
+FormatTime function will format the time, as specified by input, by parsing a OHLC time string into a go lang time.Time type and then return time in string format.
+*/
+func (ohlc *OHLC) FormatTime(format string) string {
+	timestamp, err := time.Parse(time.RFC3339, ohlc.Time)
+	if err != nil {
+		log.Fatalf("error parsing timestamp: %v", err)
+	}
+	return timestamp.Format(format)
 }
 
 // struct for unmarshalling json data from Oanda's [Pricing - stream endpoint].
@@ -111,20 +141,20 @@ type HeartBeat struct {
 	Time string `json:"time"`
 }
 
-// GetIdToken function will return id & token
-// first you must enter your ID and Token into
-// res.json file, one can get these from
+// GetIdToken function will return id & token for primary account.
+// First you must enter your ID and token into
+// res.json file. You can generate these from
 // Oanda's [Demo Account].
 //
 // [Demo Account]: https://fxtrade.oanda.com/your_account/fxtrade/register/gate?utm_source=oandaapi&utm_medium=link&utm_campaign=devportaldocs_demo
-func GetIdToken(file_path string, display bool) (*Account, error) {
+func GetIdToken(file_path string, display bool) (*PrimaryAccount, error) {
 	log.SetFlags(log.Ldate | log.Lshortfile)
 	jsonFile, err := os.Open(file_path)
 
 	// change log.Fatal to log.Print for resful_test.go to work
 	// specifically the TestGetIdTokenInvalidPath() test function
 	if err != nil {
-		log.Print("error opening json file: ", err)
+		// log.Print("error opening json file: ", err)
 		return nil, err
 	}
 
@@ -139,7 +169,7 @@ func GetIdToken(file_path string, display bool) (*Account, error) {
 	}
 
 	// we initialize our Account variable
-	var account Account
+	var account PrimaryAccount
 
 	// we unmarshal our byteArray which contains our
 	// jsonFile's content into 'account' which we defined above
@@ -148,7 +178,7 @@ func GetIdToken(file_path string, display bool) (*Account, error) {
 	// change log.Fatal to log.Print for resful_test.go to work
 	// specifically the TestGetIdTokenInvalidPath() test function
 	if err != nil {
-		log.Print("error unmarshaling json: ", err)
+		// log.Print("error unmarshaling json: ", err)
 		return nil, err
 	}
 	// Print the account ID and Token to the console
@@ -159,6 +189,40 @@ func GetIdToken(file_path string, display bool) (*Account, error) {
 	}
 
 	return &account, err
+}
+
+// GetAllIdToken function will return all id & token pairs.
+// First you must enter your ID and token into
+// res.json file. You can generate these from
+// Oanda's [Demo Account].
+//
+// [Demo Account]: https://fxtrade.oanda.com/your_account/fxtrade/register/gate?utm_source=oandaapi&utm_medium=link&utm_campaign=devportaldocs_demo
+func GetAllIdToken(file_path string, display bool) (*Credentials, error) {
+	log.SetFlags(log.Ldate | log.Lshortfile)
+	jsonFile, err := os.Open(file_path)
+
+	// change log.Fatal to log.Print for resful_test.go to work
+	// specifically the TestGetIdTokenInvalidPath() test function
+	if err != nil {
+		log.Print("error opening json file: ", err)
+		return nil, err
+	}
+	defer jsonFile.Close()
+
+	var credentials Credentials
+	decoder := json.NewDecoder(jsonFile)
+	if err := decoder.Decode(&credentials); err != nil {
+		log.Fatal(err)
+	}
+
+	// Output the dynamically captured fields
+	if display {
+		for key, credential := range credentials.Account {
+			fmt.Printf("Account: %s, ID: %s, Token: %s\n", key, credential.ID, credential.Token)
+		}
+	}
+
+	return &credentials, err
 }
 
 // Get Request for Instrument endpoint - returns historical OHLC Bid/Ask.
@@ -177,7 +241,6 @@ func GetCandlesBA(instrument, granularity, token string, display bool) (*Metadat
 
 	// preapre http get request with url
 	req, err := http.NewRequest("GET", url, nil)
-
 	if err != nil {
 		return nil, fmt.Errorf("error: %s", err.Error())
 	}
@@ -199,16 +262,12 @@ func GetCandlesBA(instrument, granularity, token string, display bool) (*Metadat
 	// print string to console for debugging
 	// fmt.Println(req.URL.String())
 
-	// time duration of request
-	queryStart := time.Now()
 	response, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("error: %s", err.Error())
 	} else if response.StatusCode == 400 {
 		return nil, fmt.Errorf("400 error: %d", response.StatusCode)
 	}
-	queryEnd := time.Now()
-	queryDuration := queryEnd.Sub(queryStart)
 	defer response.Body.Close()
 
 	// response body is []byte
@@ -221,7 +280,6 @@ func GetCandlesBA(instrument, granularity, token string, display bool) (*Metadat
 	// unmarshal the json data from get response
 	var candles Metadata
 	err = json.Unmarshal(body, &candles)
-
 	if err != nil {
 		return nil, fmt.Errorf("error unmarshaling json: %s", err.Error())
 	}
@@ -231,7 +289,6 @@ func GetCandlesBA(instrument, granularity, token string, display bool) (*Metadat
 	if display {
 		candle_count := len(candles.Candles)
 		mostRecentCandle := &candles.Candles[candle_count-1]
-		fmt.Printf("Get Request Duration: %v\n", queryDuration)
 		fmt.Printf("Instrument: \t\t%s\n", candles.Instrument)
 		fmt.Printf("Granularity: \t\t%s\n", candles.Granularity)
 		fmt.Printf("Candles - Count: \t%v\n", candle_count)
@@ -251,135 +308,4 @@ func GetCandlesBA(instrument, granularity, token string, display bool) (*Metadat
 	}
 
 	return &candles, err
-}
-
-// Get JSON Stream for Pricing endpoint - returns live Bid/Ask.
-//   - Parameters requires list of instruments, token, and id
-//
-// See [Pricing - stream endpoint]
-//
-// [Pricing - stream endpoint]: https://developer.oanda.com/rest-live-v20/pricing-ep/
-func GetStreamMSSQL(ctx context.Context, conn *sql.DB, instrument string, token string, id string, display bool) {
-	streamUrl := fmt.Sprintf("https://stream-fxpractice.oanda.com/v3/accounts/%s/pricing/stream", id)
-
-	// declare http client request
-	// no timeout due to endpoint being a data stream
-	// unless idle connection
-	tr := &http.Transport{
-		MaxConnsPerHost: 2,
-		MaxIdleConns:    2,
-		IdleConnTimeout: 30 * time.Second,
-	}
-	client := &http.Client{Transport: tr}
-
-	// preapre http get request with url
-	req, err := http.NewRequest("GET", streamUrl, nil)
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	// set headers for get request
-	// check Oandas Best Practices for guidance https://developer.oanda.com/rest-live-v20/best-practices/
-	// and check their pricing endpoint for streaming https://developer.oanda.com/rest-live-v20/pricing-ep/
-	req.Header.Set("Content-Type", "application/octet-stream")
-	req.Header.Add("Authorization", "Bearer "+token)
-	req.Header.Add("Accept-Datetime-Format", "RFC3339")
-	req.Header.Add("Connection", "Keep-Alive")
-
-	// query parameters for get request
-	q := req.URL.Query()
-	q.Add("instruments", instrument)
-	// Flag that enables/disables the sending of a
-	// pricing snapshot when initially connecting to the stream.
-	// [default=True]
-	q.Add("snapshot", "True")
-	// Flag that enables the inclusion of the
-	// homeConversions field in the returned response.
-	// An entry will be returned for each currency
-	// in the set of all base and quote currencies
-	// present in the requested instruments list.
-	// [default=False]
-	q.Add("includeHomeConversions", "False")
-	// encore the url and print it
-	req.URL.RawQuery = q.Encode()
-
-	// print string to console for debugging
-	fmt.Println(req.URL.String())
-
-	// Send the GET Request
-	response, err := client.Do(req)
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	defer response.Body.Close()
-
-	// response body is []byte
-	//body, err := ioutil.ReadAll(response.Body)
-
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	// dec := json.NewDecoder(strings.NewReader(body))
-	dec := json.NewDecoder(response.Body)
-	//dec := json.NewDecoder(bytes.NewReader(body))
-
-	for {
-		var tick Stream
-		if err := dec.Decode(&tick); err != nil {
-			log.Fatal(err)
-		}
-		if tick.Type != "PRICE" && tick.Instrument != "" && display {
-			fmt.Printf("Type: %s\n", tick.Type)
-			fmt.Printf("Time: %s\n", tick.Time)
-			fmt.Println("Bids:")
-			fmt.Printf("\tPrice: %s\n", tick.Bids[0].Price)
-			fmt.Printf("\tLiquidity: %d\n", tick.Bids[0].Liquidity)
-			fmt.Println("Ask:")
-			fmt.Printf("\tPrice: %s\n", tick.Asks[0].Price)
-			fmt.Printf("\tLiquidity: %d\n", tick.Asks[0].Liquidity)
-			fmt.Printf("Close Out Bid: %s\n", tick.CloseOutBid)
-			fmt.Printf("Close Out Ask: %s\n", tick.CloseOutAsk)
-			fmt.Printf("Status: %s\n", tick.Status)
-			fmt.Printf("Tradeable: %t\n", tick.Tradeable)
-			fmt.Printf("Instrument: %s\n", tick.Instrument)
-			// err = json.Unmarshal(body, &candles)
-		} else if tick.Type == "HEARTBEAT" && display {
-			fmt.Printf("Type: %s, Time: %s\n", tick.Type, tick.Time)
-		}
-
-		if tick.Type == "PRICE" && tick.Instrument != "" && !display {
-			// Microsoft SQL does not allow boolean values
-			// convert to 0 or 1 (bit type) instead
-			// where 1=true, and 0=false
-			var tradeable int
-			if tick.Tradeable {
-				tradeable = 1
-			} else {
-				tradeable = 0
-			}
-			// Insert into PostNames Table in the Gin-Test database
-			query := `INSERT INTO [Oanda-Stream].[dbo].[Stream] VALUES ('%s', '%s', '%s', %d, '%s', %d, '%s', '%s', '%s', %d, '%s');`
-			tsql := fmt.Sprintf(query, tick.Type, tick.Time, tick.Bids[0].Price,
-				tick.Bids[0].Liquidity, tick.Asks[0].Price, tick.Asks[0].Liquidity,
-				tick.CloseOutBid, tick.CloseOutAsk, tick.Status, tradeable, tick.Instrument)
-			// Execute query
-			_, err = conn.QueryContext(ctx, tsql)
-			if err != nil {
-				log.Fatalln(err)
-			}
-		} else if tick.Type == "HEARTBEAT" && !display {
-			fmt.Printf("%s, Time: %s\n", tick.Type, tick.Time)
-			query := `INSERT INTO [Oanda-Stream].[dbo].[Heartbeats] VALUES ('%s', '%s');`
-			tsql := fmt.Sprintf(query, tick.Type, tick.Time)
-			// Execute query
-			_, err = conn.QueryContext(ctx, tsql)
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
-	}
 }
