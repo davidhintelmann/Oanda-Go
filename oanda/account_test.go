@@ -1,10 +1,10 @@
-package restful_test
+package oanda_test
 
 import (
 	"fmt"
 	"log"
 
-	"github.com/davidhintelmann/Oanda-Go/restful"
+	"github.com/davidhintelmann/Oanda-Go/oanda"
 )
 
 // must include ID and Token into
@@ -14,13 +14,13 @@ const accountJSON string = "../res_edit.json"
 
 func Example_account() {
 	// Get ID and Token for Oanda Account
-	creds, err := restful.GetAllIdToken(accountJSON, false)
+	creds, err := oanda.GetAllIdToken(accountJSON, false)
 	_, token := creds.Account["primary"].ID, creds.Account["primary"].Token
 	if err != nil {
 		log.Fatalf("error during GetIdToken(): %v", err)
 	}
 
-	acc, err := restful.GetAccounts(token)
+	acc, err := oanda.GetAccounts(token)
 	if err != nil {
 		log.Fatalf("error during GetCandlesBA(): %v", err)
 	}
@@ -31,13 +31,13 @@ func Example_account() {
 
 func Example_accountID() {
 	// Get ID and Token for Oanda Account
-	creds, err := restful.GetAllIdToken(accountJSON, false)
+	creds, err := oanda.GetAllIdToken(accountJSON, false)
 	id, token := creds.Account["primary"].ID, creds.Account["primary"].Token
 	if err != nil {
 		log.Fatalf("error during GetIdToken(): %v", err)
 	}
 
-	accID, err := restful.GetAccountID(id, token)
+	accID, err := oanda.GetAccountID(id, token)
 	if err != nil {
 		log.Fatalf("error during GetCandlesBA(): %v", err)
 	}
@@ -48,13 +48,13 @@ func Example_accountID() {
 
 func Example_accountSummary() {
 	// Get ID and Token for Oanda Account
-	creds, err := restful.GetAllIdToken(accountJSON, false)
+	creds, err := oanda.GetAllIdToken(accountJSON, false)
 	id, token := creds.Account["primary"].ID, creds.Account["primary"].Token
 	if err != nil {
 		log.Fatalf("error during GetIdToken(): %v", err)
 	}
 
-	summary, err := restful.GetAccountSummary(id, token)
+	summary, err := oanda.GetAccountSummary(id, token)
 	if err != nil {
 		log.Fatalf("error during GetCandlesBA(): %v", err)
 	}

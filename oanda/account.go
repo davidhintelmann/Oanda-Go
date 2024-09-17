@@ -1,4 +1,4 @@
-package restful
+package oanda
 
 import (
 	"encoding/json"

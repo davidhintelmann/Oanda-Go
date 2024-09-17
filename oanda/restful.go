@@ -18,7 +18,7 @@
 // [Instrument - candles endpoint]: https://developer.oanda.com/rest-live-v20/instrument-ep/
 // [Pricing - stream endpoint]: https://developer.oanda.com/rest-live-v20/pricing-ep/
 // [Best Practices]: https://developer.oanda.com/rest-live-v20/best-practices/
-package restful
+package oanda
 
 import (
 	"encoding/json"

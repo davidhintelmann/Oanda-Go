@@ -1,4 +1,4 @@
-package restful_test
+package oanda_test
 
 import (
 	"fmt"
