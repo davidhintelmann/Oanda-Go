@@ -1,4 +1,4 @@
-// restful package is a wrapper API for [Oanda-V20] RESTful API.
+// oanda package is a wrapper API for [Oanda-V20] RESTful API.
 // Currently this wrapper API only covers two endpoints:
 //
 //  1. Get request for [Instrument - candles endpoint] which returns
