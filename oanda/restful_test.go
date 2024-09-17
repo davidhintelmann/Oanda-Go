@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/davidhintelmann/Oanda-Go/restful"
+	"github.com/davidhintelmann/Oanda-Go/oanda"
 )
 
 func TestGetIdTokenValidPath(t *testing.T) {
@@ -38,7 +38,7 @@ Error: %v`, err)
 	// ie. that is the path that needs to work
 	pathNeedsToWork := "../res.json"
 	for _, b := range [2]bool{true, false} {
-		account, err := restful.GetIdToken(pathNeedsToWork, b)
+		account, err := oanda.GetIdToken(pathNeedsToWork, b)
 
 		if err != nil {
 			t.Fatalf(`Test for GetIdToken(file_path, display) produced an error: %v
@@ -85,7 +85,7 @@ Error: %v`, err)
 	// last element ("../LICENSE") in InvalidPaths works but unmarshaling json will fail
 	invalidPaths := [6]string{"res.json", "../../res.json", "../r.json", "../res.txt", "../LICENSE"}
 	for _, v := range invalidPaths {
-		_, err := restful.GetIdToken(v, false)
+		_, err := oanda.GetIdToken(v, false)
 
 		if err == nil {
 			t.Fatalf(`Test for GetIdToken(file_path, display) produced an error: %v
@@ -105,14 +105,14 @@ func Example_candles() {
 	log.SetFlags(log.Ldate | log.Lshortfile)
 
 	// Get ID and Token for Oanda Account
-	idToken, err := restful.GetIdToken(account_path, false)
+	idToken, err := oanda.GetIdToken(account_path, false)
 	if err != nil {
 		log.Fatalf("error during GetIdToken(): %v", err)
 	}
 
 	// GetCandlesBA function sends a GET request to Oanda's API
 	// set the display parameter to true to output OHLC data to the console
-	data, err := restful.GetCandlesBA("USD_CAD", "S5", idToken.Account.Token, false)
+	data, err := oanda.GetCandlesBA("USD_CAD", "S5", idToken.Account.Token, false)
 	if err != nil {
 		log.Fatalf("error during GetCandlesBA(): %v", err)
 	}
