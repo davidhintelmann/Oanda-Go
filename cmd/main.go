@@ -47,7 +47,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/davidhintelmann/Oanda-Go/restful"
+	"github.com/davidhintelmann/Oanda-Go/oanda"
 )
 
 // must include ID and Token into
@@ -64,7 +64,7 @@ func main() {
 	log.SetFlags(log.Ldate | log.Llongfile)
 
 	// Get ID and Token for Oanda Account
-	creds, err := restful.GetAllIdToken(accountJSON, false)
+	creds, err := oanda.GetAllIdToken(accountJSON, false)
 	if err != nil {
 		log.Fatalf("error during GetIdToken(): %v", err)
 	}
@@ -72,23 +72,30 @@ func main() {
 
 	// GetCandlesBA function sends a GET request to Oanda's API
 	// set the display parameter to true to output OHLC data to the console
-	_, err = restful.GetCandlesBA("USD_CAD", "S5", token, false)
+	_, err = oanda.GetCandlesBA("USD_CAD", "S5", token, false)
 	if err != nil {
 		log.Fatalf("error during GetCandlesBA(): %v", err)
 	}
 
-	accounts, err := restful.GetAccounts(token)
-	if err != nil {
-		log.Fatalf("error during GetCandlesBA(): %v", err)
-	}
-
-	fmt.Println(token)
-	fmt.Println(accounts.Account[0].ID)
-
-	accountID, err := restful.GetAccountID(accounts.Account[0].ID, token)
+	accounts, err := oanda.GetAccounts(token)
 	if err != nil {
 		log.Fatalf("error during GetCandlesBA(): %v", err)
 	} else {
-		fmt.Println(accountID.Details.Balance)
+		fmt.Println(token)
+		fmt.Println(accounts.Account[0].ID)
+	}
+
+	accountID, err := oanda.GetAccountID(accounts.Account[0].ID, token)
+	if err != nil {
+		log.Fatalf("error during GetCandlesBA(): %v", err)
+	} else {
+		fmt.Println(accountID.Account.Balance)
+	}
+
+	summary, err := oanda.GetAccountSummary(accounts.Account[0].ID, token)
+	if err != nil {
+		log.Fatalf("error during GetCandlesBA(): %v", err)
+	} else {
+		fmt.Println(summary.Account.Currency)
 	}
 }

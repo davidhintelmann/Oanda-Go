@@ -1,4 +1,4 @@
-package restful
+package oanda
 
 import (
 	"encoding/json"
@@ -38,16 +38,16 @@ endpoint: /v3/accounts/{accountID}
 [Account Endpoints]: https://developer.oanda.com/rest-live-v20/account-ep/
 */
 type AccountID struct {
-	Details           Details `json:"account"`
-	LastTransactionID string  `json:"lastTransactionID"`
+	Account           IdDetails `json:"account"`
+	LastTransactionID string    `json:"lastTransactionID"`
 }
 
 /*
-embedded struct for AccID
+embedded struct for AccountID
 
 endpoint: /v3/accounts/{accountID}
 */
-type Details struct {
+type IdDetails struct {
 	GuaranteedStopLossOrderMode string      `json:"guaranteedStopLossOrderMode"`
 	HedgingEnabled              bool        `json:"hedgingEnabled"`
 	ID                          string      `json:"id"`
@@ -86,12 +86,22 @@ type Details struct {
 	MarginCallPercent           string      `json:"marginCallPercent"`
 }
 
+/*
+embedded struct for AccountID
+
+endpoint: /v3/accounts/{accountID}
+*/
 type Positions struct {
 	Instrument string `json:"instrument"`
 	Long       Long   `json:"long"`
 	Short      Short  `json:"short"`
 }
 
+/*
+embedded struct for AccountID
+
+endpoint: /v3/accounts/{accountID}
+*/
 type Long struct {
 	Instrument              string `json:"instrument"`
 	Units                   string `json:"units"`
@@ -103,6 +113,11 @@ type Long struct {
 	UnrealizedPL            string `json:"unrealizedPL"`
 }
 
+/*
+embedded struct for AccountID
+
+endpoint: /v3/accounts/{accountID}
+*/
 type Short struct {
 	Instrument              string `json:"instrument"`
 	Units                   string `json:"units"`
@@ -112,6 +127,51 @@ type Short struct {
 	DividendAdjustment      string `json:"dividendAdjustment"`
 	GuaranteedExecutionFees string `json:"guaranteedExecutionFees"`
 	UnrealizedPL            string `json:"unrealizedPL"`
+}
+
+/*
+struct for unmarshalling json from [Account Endpoints] to get a summary for a single account that a client has access to.
+
+endpoint: /v3/accounts/{accountID}/summary
+
+[Account Endpoints]: https://developer.oanda.com/rest-live-v20/account-ep/
+*/
+type AccountSummary struct {
+	Account           SummaryDetails `json:"account"`
+	LastTransactionID string         `json:"lastTransactionID"`
+}
+
+/*
+embedded struct for AccountSummary
+
+endpoint: /v3/accounts/{accountID}/summary
+*/
+type SummaryDetails struct {
+	NAV                         string `json:"account"`
+	Alias                       string `json:"alias"`
+	Balance                     string `json:"balance"`
+	CreatedByUserID             int    `json:"createdByUserID"`
+	CreatedTime                 string `json:"createdTime"`
+	Currency                    string `json:"currency"`
+	HedgingEnabled              bool   `json:"hedgingEnabled"`
+	ID                          string `json:"id"`
+	LastTransactionID           string `json:"lastTransactionID"`
+	MarginAvailable             string `json:"marginAvailable"`
+	MarginCloseoutMarginUsed    string `json:"marginCloseoutMarginUsed"`
+	MarginCloseoutNAV           string `json:"marginCloseoutNAV"`
+	MarginCloseoutPercent       string `json:"marginCloseoutPercent"`
+	MarginCloseoutPositionValue string `json:"marginCloseoutPositionValue"`
+	MarginCloseoutUnrealizedPL  string `json:"marginCloseoutUnrealizedPL"`
+	MarginRate                  string `json:"marginRate"`
+	MarginUsed                  string `json:"marginUsed"`
+	OpenPositionCount           int    `json:"openPositionCount"`
+	OpenTradeCount              int    `json:"openTradeCount"`
+	PendingOrderCount           int    `json:"pendingOrderCount"`
+	PL                          string `json:"pl"`
+	PositionValue               string `json:"positionValue"`
+	ResettablePL                string `json:"resettablePL"`
+	UnrealizedPL                string `json:"unrealizedPL"`
+	WithdrawalLimit             string `json:"withdrawalLimit"`
 }
 
 /*
@@ -169,7 +229,7 @@ func GetAccounts(token string) (*AccountEndpoint, error) {
 }
 
 /*
-GetAccountID function will return full details given an accountID for which one is authorized to use with a valid token.
+GetAccountID function will return full details given an accountID for which one is authorized to use with a valid token. This includes full pending order, open trade, and open position representations are provided.
 
 For more info go to Oandas documentation for [Account Endpoints].
 
@@ -213,4 +273,51 @@ func GetAccountID(id string, token string) (*AccountID, error) {
 	}
 
 	return &accountid, nil
+}
+
+/*
+GetAccountID function will return full details given an accountID for which one is authorized to use with a valid token. This includes full pending order, open trade, and open position representations are provided.
+
+For more info go to Oandas documentation for [Account Endpoints].
+
+[Account Endpoints]: https://developer.oanda.com/rest-live-v20/account-ep/
+*/
+func GetAccountSummary(id string, token string) (*AccountSummary, error) {
+	url := "https://api-fxpractice.oanda.com/v3/accounts/" + id + "/summary"
+
+	client := &http.Client{
+		Timeout: time.Second * 10,
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error: %s", err.Error())
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("Authorization", "Bearer "+token)
+	req.Header.Add("Accept-Datetime-Format", "RFC3339")
+	req.URL.Query().Encode()
+
+	response, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error: %s", err.Error())
+	} else if response.StatusCode == 400 {
+		return nil, fmt.Errorf("400 error: %d", response.StatusCode)
+	}
+	defer response.Body.Close()
+
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	var accountsummary AccountSummary
+	err = json.Unmarshal(body, &accountsummary)
+
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshaling json: %s", err.Error())
+	}
+
+	return &accountsummary, nil
 }
