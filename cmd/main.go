@@ -43,6 +43,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 
@@ -55,15 +56,20 @@ import (
 const accountJSON string = "../res.json"
 
 func main() {
+	// set flag for account name in res.json file
+	accountName := flag.String("account", "primary", "Account name found in res.json file")
+	flag.Parse()
+
 	// set log flags for date and script file with line number for where the error occurred
-	log.SetFlags(log.Ldate | log.Lshortfile)
+	log.SetFlags(log.Ldate | log.Llongfile)
 
 	// Get ID and Token for Oanda Account
 	creds, err := restful.GetAllIdToken(accountJSON, false)
 	if err != nil {
 		log.Fatalf("error during GetIdToken(): %v", err)
 	}
-	token := creds.Account["umpa92"].Token
+	token := creds.Account[*accountName].Token
+
 	// GetCandlesBA function sends a GET request to Oanda's API
 	// set the display parameter to true to output OHLC data to the console
 	_, err = restful.GetCandlesBA("USD_CAD", "S5", token, false)
@@ -71,11 +77,18 @@ func main() {
 		log.Fatalf("error during GetCandlesBA(): %v", err)
 	}
 
-	fmt.Println(token)
-
 	accounts, err := restful.GetAccounts(token)
 	if err != nil {
 		log.Fatalf("error during GetCandlesBA(): %v", err)
 	}
-	fmt.Println(accounts.Account)
+
+	fmt.Println(token)
+	fmt.Println(accounts.Account[0].ID)
+
+	accountID, err := restful.GetAccountID(accounts.Account[0].ID, token)
+	if err != nil {
+		log.Fatalf("error during GetCandlesBA(): %v", err)
+	} else {
+		fmt.Println(accountID.Details.Balance)
+	}
 }

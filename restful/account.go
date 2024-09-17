@@ -10,7 +10,9 @@ import (
 )
 
 /*
-struct for unmarshalling [Account Endpoints] which one is authorized for with the provided token.
+struct for unmarshalling json from [Account Endpoints] for which one is authorized with the provided token.
+
+endpoint: /v3/accounts
 
 [Account Endpoints]: https://developer.oanda.com/rest-live-v20/account-ep/
 */
@@ -18,13 +20,102 @@ type AccountEndpoint struct {
 	Account []AuthAcc `json:"accounts"`
 }
 
+/*
+embedded struct for AccountEndpoint
+
+endpoint: /v3/accounts
+*/
 type AuthAcc struct {
 	ID   string   `json:"id"`
 	Tags []string `json:"tags"`
 }
 
 /*
-GetAccounts function will get a list of all accounts authorized for with the provided token.
+struct for unmarshalling json from [Account Endpoints] to get full details for an account.
+
+endpoint: /v3/accounts/{accountID}
+
+[Account Endpoints]: https://developer.oanda.com/rest-live-v20/account-ep/
+*/
+type AccountID struct {
+	Details           Details `json:"account"`
+	LastTransactionID string  `json:"lastTransactionID"`
+}
+
+/*
+embedded struct for AccID
+
+endpoint: /v3/accounts/{accountID}
+*/
+type Details struct {
+	GuaranteedStopLossOrderMode string      `json:"guaranteedStopLossOrderMode"`
+	HedgingEnabled              bool        `json:"hedgingEnabled"`
+	ID                          string      `json:"id"`
+	CreatedTime                 string      `json:"createdTime"`
+	Currency                    string      `json:"currency"`
+	CreatedByUserID             int         `json:"createdByUserID"`
+	Alias                       string      `json:"alias"`
+	MarginRate                  string      `json:"marginRate"`
+	LastTransactionID           string      `json:"lastTransactionID"`
+	Balance                     string      `json:"balance"`
+	OpenTradeCount              int         `json:"openTradeCount"`
+	OpenPositionCount           int         `json:"openPositionCount"`
+	PendingOrderCount           int         `json:"pendingOrderCount"`
+	PL                          string      `json:"pl"`
+	ResettablePL                string      `json:"resettablePL"`
+	ResettablePLTime            string      `json:"resettablePLTime"`
+	Financing                   string      `json:"financing"`
+	Commission                  string      `json:"commission"`
+	DividendAdjustment          string      `json:"dividendAdjustment"`
+	GuaranteedExecutionFees     string      `json:"guaranteedExecutionFees"`
+	Orders                      []string    `json:"orders"`
+	Positions                   []Positions `json:"positions"`
+	Trades                      []string    `json:"trades"`
+	UnrealizedPL                string      `json:"unrealizedPL"`
+	NAV                         string      `json:"NAV"`
+	MarginUsed                  string      `json:"marginUsed"`
+	MarginAvailable             string      `json:"marginAvailable"`
+	PositionValue               string      `json:"positionValue"`
+	MarginCloseoutUnrealizedPL  string      `json:"marginCloseoutUnrealizedPL"`
+	MarginCloseoutNAV           string      `json:"marginCloseoutNAV"`
+	MarginCloseoutMarginUsed    string      `json:"marginCloseoutMarginUsed"`
+	MarginCloseoutPositionValue string      `json:"marginCloseoutPositionValue"`
+	MarginCloseoutPercent       string      `json:"marginCloseoutPercent"`
+	WithdrawalLimit             string      `json:"withdrawalLimit"`
+	MarginCallMarginUsed        string      `json:"marginCallMarginUsed"`
+	MarginCallPercent           string      `json:"marginCallPercent"`
+}
+
+type Positions struct {
+	Instrument string `json:"instrument"`
+	Long       Long   `json:"long"`
+	Short      Short  `json:"short"`
+}
+
+type Long struct {
+	Instrument              string `json:"instrument"`
+	Units                   string `json:"units"`
+	PL                      string `json:"pl"`
+	ResettablePL            string `json:"resettablePL"`
+	Financing               string `json:"financing"`
+	DividendAdjustment      string `json:"dividendAdjustment"`
+	GuaranteedExecutionFees string `json:"guaranteedExecutionFees"`
+	UnrealizedPL            string `json:"unrealizedPL"`
+}
+
+type Short struct {
+	Instrument              string `json:"instrument"`
+	Units                   string `json:"units"`
+	PL                      string `json:"pl"`
+	ResettablePL            string `json:"resettablePL"`
+	Financing               string `json:"financing"`
+	DividendAdjustment      string `json:"dividendAdjustment"`
+	GuaranteedExecutionFees string `json:"guaranteedExecutionFees"`
+	UnrealizedPL            string `json:"unrealizedPL"`
+}
+
+/*
+GetAccounts function will get a list of all accounts one is authorized to use with the provided token.
 
 For more info go to Oandas documentation for [Account Endpoints].
 
@@ -50,13 +141,8 @@ func GetAccounts(token string) (*AccountEndpoint, error) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+token)
 	req.Header.Add("Accept-Datetime-Format", "RFC3339")
-
-	// query parameters for get request
-	q := req.URL.Query()
-	// q.Add("granularity", granularity)
-	// q.Add("price", "BA")
-	// encore the url
-	req.URL.RawQuery = q.Encode()
+	// req.URL.RawQuery = req.URL.Query().Encode()
+	req.URL.Query().Encode()
 
 	response, err := client.Do(req)
 	if err != nil {
@@ -80,4 +166,51 @@ func GetAccounts(token string) (*AccountEndpoint, error) {
 	}
 
 	return &account, nil
+}
+
+/*
+GetAccountID function will return full details given an accountID for which one is authorized to use with a valid token.
+
+For more info go to Oandas documentation for [Account Endpoints].
+
+[Account Endpoints]: https://developer.oanda.com/rest-live-v20/account-ep/
+*/
+func GetAccountID(id string, token string) (*AccountID, error) {
+	url := "https://api-fxpractice.oanda.com/v3/accounts/" + id
+
+	client := &http.Client{
+		Timeout: time.Second * 10,
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error: %s", err.Error())
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("Authorization", "Bearer "+token)
+	req.Header.Add("Accept-Datetime-Format", "RFC3339")
+	req.URL.Query().Encode()
+
+	response, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error: %s", err.Error())
+	} else if response.StatusCode == 400 {
+		return nil, fmt.Errorf("400 error: %d", response.StatusCode)
+	}
+	defer response.Body.Close()
+
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	var accountid AccountID
+	err = json.Unmarshal(body, &accountid)
+
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshaling json: %s", err.Error())
+	}
+
+	return &accountid, nil
 }
