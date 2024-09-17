@@ -25,9 +25,23 @@ func Example_account() {
 		log.Fatalf("error during GetCandlesBA(): %v", err)
 	}
 
-	fmt.Println(token)
+	// print all the accounts one is authorized to use with the provided token
 	fmt.Println(acc.Account)
-	// Output:
-	// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-	// []
+}
+
+func Example_accountID() {
+	// Get ID and Token for Oanda Account
+	creds, err := restful.GetAllIdToken(accountJSON, false)
+	id, token := creds.Account["primary"].ID, creds.Account["primary"].Token
+	if err != nil {
+		log.Fatalf("error during GetIdToken(): %v", err)
+	}
+
+	accID, err := restful.GetAccountID(id, token)
+	if err != nil {
+		log.Fatalf("error during GetCandlesBA(): %v", err)
+	}
+
+	// print balance for account
+	fmt.Println(accID.Details.Balance)
 }

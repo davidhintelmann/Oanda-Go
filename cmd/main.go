@@ -84,4 +84,11 @@ func main() {
 
 	fmt.Println(token)
 	fmt.Println(accounts.Account[0].ID)
+
+	accountID, err := restful.GetAccountID(accounts.Account[0].ID, token)
+	if err != nil {
+		log.Fatalf("error during GetCandlesBA(): %v", err)
+	} else {
+		fmt.Println(accountID.Details.Balance)
+	}
 }

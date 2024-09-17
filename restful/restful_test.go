@@ -99,7 +99,7 @@ func Example_candles() {
 	// must include ID and Token into
 	// res.json file, one can get these at
 	// https://fxtrade.oanda.com/your_account/fxtrade/register/gate?utm_source=oandaapi&utm_medium=link&utm_campaign=devportaldocs_demo
-	var account_path string = "../res.json"
+	var account_path string = "../res_edit.json"
 
 	// set log flags for date and script file with line number for where the error occurred
 	log.SetFlags(log.Ldate | log.Lshortfile)
@@ -109,18 +109,14 @@ func Example_candles() {
 	if err != nil {
 		log.Fatalf("error during GetIdToken(): %v", err)
 	}
+
 	// GetCandlesBA function sends a GET request to Oanda's API
 	// set the display parameter to true to output OHLC data to the console
-	data, err := restful.GetCandlesBA("USD_CAD", "S5", idToken.Account.Token, true)
+	data, err := restful.GetCandlesBA("USD_CAD", "S5", idToken.Account.Token, false)
 	if err != nil {
 		log.Fatalf("error during GetCandlesBA(): %v", err)
 	}
 	fmt.Println(data.Candles)
 	fmt.Println(data.Granularity)
 	fmt.Println(data.Instrument)
-	// Output:
-	// {true 1 2024-09-16T03:24:15.000000000Z {1.35733 1.35733 1.35733 1.35733} {1.35753 1.35753 1.35753 1.35753}}
-	// S5
-	// USD_CAD
-	// 2024-09-16 03:24:15 AM UTC
 }
