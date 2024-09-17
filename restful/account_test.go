@@ -43,5 +43,22 @@ func Example_accountID() {
 	}
 
 	// print balance for account
-	fmt.Println(accID.Details.Balance)
+	fmt.Println(accID.Account.Balance)
+}
+
+func Example_accountSummary() {
+	// Get ID and Token for Oanda Account
+	creds, err := restful.GetAllIdToken(accountJSON, false)
+	id, token := creds.Account["primary"].ID, creds.Account["primary"].Token
+	if err != nil {
+		log.Fatalf("error during GetIdToken(): %v", err)
+	}
+
+	summary, err := restful.GetAccountSummary(id, token)
+	if err != nil {
+		log.Fatalf("error during GetCandlesBA(): %v", err)
+	}
+
+	// print the base currency for this account
+	fmt.Println(summary.Account.Currency)
 }

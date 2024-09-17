@@ -80,15 +80,22 @@ func main() {
 	accounts, err := restful.GetAccounts(token)
 	if err != nil {
 		log.Fatalf("error during GetCandlesBA(): %v", err)
+	} else {
+		fmt.Println(token)
+		fmt.Println(accounts.Account[0].ID)
 	}
-
-	fmt.Println(token)
-	fmt.Println(accounts.Account[0].ID)
 
 	accountID, err := restful.GetAccountID(accounts.Account[0].ID, token)
 	if err != nil {
 		log.Fatalf("error during GetCandlesBA(): %v", err)
 	} else {
-		fmt.Println(accountID.Details.Balance)
+		fmt.Println(accountID.Account.Balance)
+	}
+
+	summary, err := restful.GetAccountSummary(accounts.Account[0].ID, token)
+	if err != nil {
+		log.Fatalf("error during GetCandlesBA(): %v", err)
+	} else {
+		fmt.Println(summary.Account.Currency)
 	}
 }
