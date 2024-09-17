@@ -17,12 +17,12 @@ func Example_account() {
 	creds, err := oanda.GetAllIdToken(accountJSON, false)
 	_, token := creds.Account["primary"].ID, creds.Account["primary"].Token
 	if err != nil {
-		log.Fatalf("error during GetIdToken(): %v", err)
+		log.Fatalf("error during GetAllIdToken(): %v", err)
 	}
 
 	acc, err := oanda.GetAccounts(token)
 	if err != nil {
-		log.Fatalf("error during GetCandlesBA(): %v", err)
+		log.Fatalf("error during GetAccounts(): %v", err)
 	}
 
 	// print all the accounts one is authorized to use with the provided token
@@ -34,12 +34,12 @@ func Example_accountID() {
 	creds, err := oanda.GetAllIdToken(accountJSON, false)
 	id, token := creds.Account["primary"].ID, creds.Account["primary"].Token
 	if err != nil {
-		log.Fatalf("error during GetIdToken(): %v", err)
+		log.Fatalf("error during GetAllIdToken(): %v", err)
 	}
 
 	accID, err := oanda.GetAccountID(id, token)
 	if err != nil {
-		log.Fatalf("error during GetCandlesBA(): %v", err)
+		log.Fatalf("error during GetAccountID(): %v", err)
 	}
 
 	// print balance for account
@@ -51,14 +51,31 @@ func Example_accountSummary() {
 	creds, err := oanda.GetAllIdToken(accountJSON, false)
 	id, token := creds.Account["primary"].ID, creds.Account["primary"].Token
 	if err != nil {
-		log.Fatalf("error during GetIdToken(): %v", err)
+		log.Fatalf("error during GetAllIdToken(): %v", err)
 	}
 
 	summary, err := oanda.GetAccountSummary(id, token)
 	if err != nil {
-		log.Fatalf("error during GetCandlesBA(): %v", err)
+		log.Fatalf("error during GetAccountSummary(): %v", err)
 	}
 
 	// print the base currency for this account
 	fmt.Println(summary.Account.Currency)
+}
+
+func Example_accountInstruments() {
+	// Get ID and Token for Oanda Account
+	creds, err := oanda.GetAllIdToken(accountJSON, false)
+	id, token := creds.Account["primary"].ID, creds.Account["primary"].Token
+	if err != nil {
+		log.Fatalf("error during GetAllIdToken(): %v", err)
+	}
+
+	instruments, err := oanda.GetAccountInstru(id, token)
+	if err != nil {
+		log.Fatalf("error during GetAccountInstru(): %v", err)
+	}
+
+	// print one possible instrument that you can trade on Oanda
+	fmt.Println(instruments.List[0].Name)
 }
