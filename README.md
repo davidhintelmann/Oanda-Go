@@ -2,9 +2,7 @@ If you are looking for the original repo please checkout `og` branch.
 
 # Query Oanda's REST-V20 API with Go
 
-This repo contains go code for querying Oanda's API for Forex price info. Inspect
-
-One could also set up a demo account to trade.
+This repo contains go code for querying Oanda's API for Forex price info. One could also set up a demo account to trade.
 
 ***WARNING:*** This is for educational purposes only.
 
@@ -23,18 +21,18 @@ Taken from [Oanda's REST V-20 API](https://developer.oanda.com/rest-live-v20/int
 
 ## Installation
 
-1. Requires [Go](https://go.dev/dl/) 1.20.3 or greater
+1. Requires [Go](https://go.dev/dl/) 1.22.5 or greater
 2. Register [demo account](https://fxtrade.oanda.com/your_account/fxtrade/register/gate?utm_source=oandaapi&utm_medium=link&utm_campaign=devportaldocs_demo) from Oanda to obtain an API key
 3. Modify the `res_edit.json` file in this repo's root directory with `ID` and `Token` obtained in the second step
    - rename `res_edit.json` to `res.json` for go code to work correctly
 
 Once the above is satisfied you can get the functions in this repo with:
 
-    go get github.com/davidhintelmann/Oanda-Go/restful
+    go get github.com/davidhintelmann/Oanda-Go/oanda
 
 Then import in your `main.go` (or any go file) with 
 
-    import "github.com/davidhintelmann/Oanda-Go/restful"
+    import "github.com/davidhintelmann/Oanda-Go/oanda"
 
 ## Endpoints
 
@@ -48,7 +46,7 @@ The following list are the endpoints one can reach using this package.
 - [x] `accounts` Get a list of Orders for an Account
 - [x] `accountID` Get the full details for a single Account that a client has access to. Full pending Order, open Trade and open Position representations are provided.
 - [x] `summary` Get a summary for a single Account that a client has access to.
-- [ ] `instruments` Get the list of tradeable instruments for the given Account. The list of tradeable instruments is dependent on the regulatory division that the Account is located in, thus should be the same for all Accounts owned by a single user.Account.
+- [x] `instruments` Get the list of tradeable instruments for the given Account. The list of tradeable instruments is dependent on the regulatory division that the Account is located in, thus should be the same for all Accounts owned by a single user.
 - [ ] `changes` Endpoint used to poll an Account for its current state and changes since a specified TransactionID.
 #### PATCH
 - [ ] `configuration` Set the client-configurable portions of an Account.

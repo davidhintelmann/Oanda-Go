@@ -10,7 +10,8 @@ import (
 )
 
 /*
-struct for unmarshalling json from [Account Endpoints] for which one is authorized with the provided token.
+struct for unmarshalling json from [Account Endpoints] for which one is
+authorized with the provided token.
 
 endpoint: /v3/accounts
 
@@ -31,7 +32,8 @@ type AuthAcc struct {
 }
 
 /*
-struct for unmarshalling json from [Account Endpoints] to get full details for an account.
+struct for unmarshalling json from [Account Endpoints] to get full details for
+an account.
 
 endpoint: /v3/accounts/{accountID}
 
@@ -130,7 +132,8 @@ type Short struct {
 }
 
 /*
-struct for unmarshalling json from [Account Endpoints] to get a summary for a single account that a client has access to.
+struct for unmarshalling json from [Account Endpoints] to get a summary for
+a single account that a client has access to.
 
 endpoint: /v3/accounts/{accountID}/summary
 
@@ -175,7 +178,76 @@ type SummaryDetails struct {
 }
 
 /*
-GetAccounts function will get a list of all accounts one is authorized to use with the provided token.
+struct for unmarshalling json from [Account Endpoints] to get a list of tradeable
+instruments for the given account. The list of tradeable instruments is dependent
+on the regulatory division that the account is located in, thus should be the same
+for all accounts owned by a single user.
+
+endpoint: /v3/accounts/{accountID}/instruments
+
+[Account Endpoints]: https://developer.oanda.com/rest-live-v20/account-ep/
+*/
+type AccountInstru struct {
+	List              []InstruDetails `json:"instruments"`
+	LastTransactionID string          `json:"lastTransactionID"`
+}
+
+/*
+embedded struct for AccountInstru
+
+endpoint: /v3/accounts/{accountID}/instruments
+*/
+type InstruDetails struct {
+	Name                        string       `json:"name"`
+	Type                        string       `json:"type"`
+	DisplayName                 string       `json:"displayName"`
+	PipLocation                 int          `json:"pipLocation"`
+	DisplayPrecision            int          `json:"displayPrecision"`
+	TradeUnitsPrecision         int          `json:"tradeUnitsPrecision"`
+	MinimumTradeSize            string       `json:"minimumTradeSize"`
+	MaximumTrailingStopDistance string       `json:"maximumTrailingStopDistance"`
+	MinimumTrailingStopDistance string       `json:"minimumTrailingStopDistance"`
+	MaximumPositionSize         string       `json:"maximumPositionSize"`
+	MaximumOrderUnits           string       `json:"maximumOrderUnits"`
+	MarginRate                  string       `json:"marginRate"`
+	GuaranteedStopLossOrderMode string       `json:"guaranteedStopLossOrderMode"`
+	Tags                        []InstruTags `json:"tags"`
+}
+
+/*
+embedded struct for AccountInstru
+
+endpoint: /v3/accounts/{accountID}/instruments
+*/
+type InstruTags struct {
+	Type string `json:"type"`
+	Name string `json:"name"`
+}
+
+/*
+embedded struct for AccountInstru
+
+endpoint: /v3/accounts/{accountID}/instruments
+*/
+type InstruFinancing struct {
+	LongRate            string             `json:"longRate"`
+	ShortRate           string             `json:"shortRate"`
+	FinancingDaysOfWeek []InstruDaysOfWeek `json:"financingDaysOfWeek"`
+}
+
+/*
+embedded struct for AccountInstru
+
+endpoint: /v3/accounts/{accountID}/instruments
+*/
+type InstruDaysOfWeek struct {
+	DayOfWeek   string `json:"dayOfWeek"`
+	DaysCharged string `json:"daysCharged"`
+}
+
+/*
+GetAccounts function will get a list of all accounts one is authorized to use with
+the provided token.
 
 For more info go to Oandas documentation for [Account Endpoints].
 
@@ -229,7 +301,9 @@ func GetAccounts(token string) (*AccountEndpoint, error) {
 }
 
 /*
-GetAccountID function will return full details given an accountID for which one is authorized to use with a valid token. This includes full pending order, open trade, and open position representations are provided.
+GetAccountID function will return full details given an accountID for which one is
+authorized to use with a valid token. This includes full pending order, open trade,
+and open position representations are provided.
 
 For more info go to Oandas documentation for [Account Endpoints].
 
@@ -276,7 +350,8 @@ func GetAccountID(id string, token string) (*AccountID, error) {
 }
 
 /*
-GetAccountID function will return full details given an accountID for which one is authorized to use with a valid token. This includes full pending order, open trade, and open position representations are provided.
+GetAccountID function will return Get a summary for a single account that a
+client has access to.
 
 For more info go to Oandas documentation for [Account Endpoints].
 
@@ -320,4 +395,53 @@ func GetAccountSummary(id string, token string) (*AccountSummary, error) {
 	}
 
 	return &accountsummary, nil
+}
+
+/*
+GetAccountID function will return a list of tradeable instruments for the given account.
+The list of tradeable instruments is dependent on the regulatory division that the account
+is located in, thus should be the same for all accounts owned by a single user.
+
+For more info go to Oandas documentation for [Account Endpoints].
+
+[Account Endpoints]: https://developer.oanda.com/rest-live-v20/account-ep/
+*/
+func GetAccountInstru(id string, token string) (*AccountInstru, error) {
+	url := "https://api-fxpractice.oanda.com/v3/accounts/" + id + "/instruments"
+
+	client := &http.Client{
+		Timeout: time.Second * 10,
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error: %s", err.Error())
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("Authorization", "Bearer "+token)
+	req.Header.Add("Accept-Datetime-Format", "RFC3339")
+	req.URL.Query().Encode()
+
+	response, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error: %s", err.Error())
+	} else if response.StatusCode == 400 {
+		return nil, fmt.Errorf("400 error: %d", response.StatusCode)
+	}
+	defer response.Body.Close()
+
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	var AccountInstru AccountInstru
+	err = json.Unmarshal(body, &AccountInstru)
+
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshaling json: %s", err.Error())
+	}
+
+	return &AccountInstru, nil
 }

@@ -79,7 +79,7 @@ func main() {
 
 	accounts, err := oanda.GetAccounts(token)
 	if err != nil {
-		log.Fatalf("error during GetCandlesBA(): %v", err)
+		log.Fatalf("error during GetAccounts(): %v", err)
 	} else {
 		fmt.Println(token)
 		fmt.Println(accounts.Account[0].ID)
@@ -87,15 +87,25 @@ func main() {
 
 	accountID, err := oanda.GetAccountID(accounts.Account[0].ID, token)
 	if err != nil {
-		log.Fatalf("error during GetCandlesBA(): %v", err)
+		log.Fatalf("error during GetAccountID(): %v", err)
 	} else {
 		fmt.Println(accountID.Account.Balance)
 	}
 
 	summary, err := oanda.GetAccountSummary(accounts.Account[0].ID, token)
 	if err != nil {
-		log.Fatalf("error during GetCandlesBA(): %v", err)
+		log.Fatalf("error during GetAccountSummary(): %v", err)
 	} else {
 		fmt.Println(summary.Account.Currency)
+	}
+
+	instruments, err := oanda.GetAccountInstru(accounts.Account[0].ID, token)
+	if err != nil {
+		log.Fatalf("error during GetAccountInstru(): %v", err)
+	} else {
+		for _, instru := range instruments.List {
+			fmt.Println(instru.Name)
+		}
+		fmt.Printf("There are %d instruments to choose from.\n", len(instruments.List))
 	}
 }
