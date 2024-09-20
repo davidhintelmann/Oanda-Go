@@ -69,6 +69,8 @@ func main() {
 		log.Fatalf("error during GetIdToken(): %v", err)
 	}
 	token := creds.Account[*accountName].Token
+	fmt.Println(creds.Account)
+	fmt.Println(token)
 
 	// GetCandlesBA function sends a GET request to Oanda's API
 	// set the display parameter to true to output OHLC data to the console
@@ -107,5 +109,16 @@ func main() {
 			fmt.Println(instru.Name)
 		}
 		fmt.Printf("There are %d instruments to choose from.\n", len(instruments.List))
+	}
+
+	changes, err := oanda.GetAccountChanges(accounts.Account[0].ID, "256", token) // accounts.Account[0].ID
+	if err != nil {
+		log.Print(err)
+		log.Fatalf("error during GetAccountInstru(): %v", err)
+	} else {
+		for _, position := range changes.Changes.Positions {
+			fmt.Println(position.Instrument)
+		}
+		fmt.Printf("Margin Available: %s\n", changes.State.MarginAvailable)
 	}
 }

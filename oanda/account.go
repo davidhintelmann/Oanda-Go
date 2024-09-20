@@ -50,42 +50,42 @@ embedded struct for AccountID
 endpoint: /v3/accounts/{accountID}
 */
 type IdDetails struct {
-	GuaranteedStopLossOrderMode string      `json:"guaranteedStopLossOrderMode"`
-	HedgingEnabled              bool        `json:"hedgingEnabled"`
-	ID                          string      `json:"id"`
-	CreatedTime                 string      `json:"createdTime"`
-	Currency                    string      `json:"currency"`
-	CreatedByUserID             int         `json:"createdByUserID"`
-	Alias                       string      `json:"alias"`
-	MarginRate                  string      `json:"marginRate"`
-	LastTransactionID           string      `json:"lastTransactionID"`
-	Balance                     string      `json:"balance"`
-	OpenTradeCount              int         `json:"openTradeCount"`
-	OpenPositionCount           int         `json:"openPositionCount"`
-	PendingOrderCount           int         `json:"pendingOrderCount"`
-	PL                          string      `json:"pl"`
-	ResettablePL                string      `json:"resettablePL"`
-	ResettablePLTime            string      `json:"resettablePLTime"`
-	Financing                   string      `json:"financing"`
-	Commission                  string      `json:"commission"`
-	DividendAdjustment          string      `json:"dividendAdjustment"`
-	GuaranteedExecutionFees     string      `json:"guaranteedExecutionFees"`
-	Orders                      []string    `json:"orders"`
-	Positions                   []Positions `json:"positions"`
-	Trades                      []string    `json:"trades"`
-	UnrealizedPL                string      `json:"unrealizedPL"`
-	NAV                         string      `json:"NAV"`
-	MarginUsed                  string      `json:"marginUsed"`
-	MarginAvailable             string      `json:"marginAvailable"`
-	PositionValue               string      `json:"positionValue"`
-	MarginCloseoutUnrealizedPL  string      `json:"marginCloseoutUnrealizedPL"`
-	MarginCloseoutNAV           string      `json:"marginCloseoutNAV"`
-	MarginCloseoutMarginUsed    string      `json:"marginCloseoutMarginUsed"`
-	MarginCloseoutPositionValue string      `json:"marginCloseoutPositionValue"`
-	MarginCloseoutPercent       string      `json:"marginCloseoutPercent"`
-	WithdrawalLimit             string      `json:"withdrawalLimit"`
-	MarginCallMarginUsed        string      `json:"marginCallMarginUsed"`
-	MarginCallPercent           string      `json:"marginCallPercent"`
+	GuaranteedStopLossOrderMode string        `json:"guaranteedStopLossOrderMode"`
+	HedgingEnabled              bool          `json:"hedgingEnabled"`
+	ID                          string        `json:"id"`
+	CreatedTime                 string        `json:"createdTime"`
+	Currency                    string        `json:"currency"`
+	CreatedByUserID             int           `json:"createdByUserID"`
+	Alias                       string        `json:"alias"`
+	MarginRate                  string        `json:"marginRate"`
+	LastTransactionID           string        `json:"lastTransactionID"`
+	Balance                     string        `json:"balance"`
+	OpenTradeCount              int           `json:"openTradeCount"`
+	OpenPositionCount           int           `json:"openPositionCount"`
+	PendingOrderCount           int           `json:"pendingOrderCount"`
+	PL                          string        `json:"pl"`
+	ResettablePL                string        `json:"resettablePL"`
+	ResettablePLTime            string        `json:"resettablePLTime"`
+	Financing                   string        `json:"financing"`
+	Commission                  string        `json:"commission"`
+	DividendAdjustment          string        `json:"dividendAdjustment"`
+	GuaranteedExecutionFees     string        `json:"guaranteedExecutionFees"`
+	Orders                      []string      `json:"orders"`
+	Positions                   []PositionsID `json:"positions"`
+	Trades                      []string      `json:"trades"`
+	UnrealizedPL                string        `json:"unrealizedPL"`
+	NAV                         string        `json:"NAV"`
+	MarginUsed                  string        `json:"marginUsed"`
+	MarginAvailable             string        `json:"marginAvailable"`
+	PositionValue               string        `json:"positionValue"`
+	MarginCloseoutUnrealizedPL  string        `json:"marginCloseoutUnrealizedPL"`
+	MarginCloseoutNAV           string        `json:"marginCloseoutNAV"`
+	MarginCloseoutMarginUsed    string        `json:"marginCloseoutMarginUsed"`
+	MarginCloseoutPositionValue string        `json:"marginCloseoutPositionValue"`
+	MarginCloseoutPercent       string        `json:"marginCloseoutPercent"`
+	WithdrawalLimit             string        `json:"withdrawalLimit"`
+	MarginCallMarginUsed        string        `json:"marginCallMarginUsed"`
+	MarginCallPercent           string        `json:"marginCallPercent"`
 }
 
 /*
@@ -93,7 +93,7 @@ embedded struct for AccountID
 
 endpoint: /v3/accounts/{accountID}
 */
-type Positions struct {
+type PositionsID struct {
 	Instrument string `json:"instrument"`
 	Long       Long   `json:"long"`
 	Short      Short  `json:"short"`
@@ -243,6 +243,168 @@ endpoint: /v3/accounts/{accountID}/instruments
 type InstruDaysOfWeek struct {
 	DayOfWeek   string `json:"dayOfWeek"`
 	DaysCharged string `json:"daysCharged"`
+}
+
+/*
+struct for unmarshalling json from [Account Endpoints] which can be used
+to poll an Account for its current state and changes since a specified TransactionID.
+
+endpoint: /v3/accounts/{accountID}/changes
+
+[Account Endpoints]: https://developer.oanda.com/rest-live-v20/account-ep/
+*/
+type AccountChange struct {
+	Changes           Changes `json:"changes"`
+	State             State   `json:"state"`
+	LastTransactionID string  `json:"lastTransactionID"`
+}
+
+/*
+embedded struct for AccountChange
+
+endpoint: /v3/accounts/{accountID}/changes
+*/
+type Changes struct {
+	OrdersCancelled []string           `json:"ordersCancelled,omitempty"` // incomplete, wrong type
+	OrdersCreated   []string           `json:"ordersCreated,omitempty"`   // incomplete, wrong type
+	OrdersFilled    []OrdersFilled     `json:"ordersFilled,omitempty"`
+	OrdersTriggered []string           `json:"ordersTriggered,omitempty"` // incomplete, wrong type
+	Positions       []ChangesPositions `json:"positions,omitempty"`
+	TradesClosed    []string           `json:"tradesClosed,omitempty"` // incomplete, wrong type
+	TradesOpened    []struct {
+		CurrentUnits string `json:"currentUnits"`
+		Financing    string `json:"financing"`
+		ID           string `json:"id"`
+		InitialUnits string `json:"initialUnits"`
+		Instrument   string `json:"instrument"`
+		OpenTime     string `json:"openTime"`
+		Price        string `json:"price"`
+		RealizedPL   string `json:"realizedPL"`
+		State        string `json:"state"`
+	} `json:"tradesOpened,omitempty"`
+	TradesReduced []string `json:"tradesReduced,omitempty"` // incomplete, wrong type
+	Transactions  []struct {
+		AccountBalance string `json:"accountBalance,omitempty"`
+		AccountID      string `json:"accountID,omitempty"`
+		BatchID        string `json:"batchID,omitempty"`
+		Financing      string `json:"financing,omitempty"`
+		ID             string `json:"id,omitempty"`
+		Instrument     string `json:"instrument,omitempty"`
+		PositionFill   string `json:"positionFill,omitempty"`
+		Reason         string `json:"reason,omitempty"`
+		Time           string `json:"time,omitempty"`
+		TimeInForce    string `json:"timeInForce,omitempty"`
+		TradeOpened    []struct {
+			TradeID string `json:"tradeID"`
+			Units   string `json:"units"`
+		} `json:"tradeOpened,omitempty"`
+		Type   string `json:"type"`
+		Units  string `json:"units"`
+		UserID string `json:"userID"`
+	} `json:"transactions,omitempty"`
+}
+
+/*
+embedded struct for AccountChange
+
+endpoint: /v3/accounts/{accountID}/changes
+*/
+type ChangesPositions struct {
+	Instrument string `json:"instrument"`
+	Long       struct {
+		AveragePrice string   `json:"averagePrice,omitempty"`
+		PL           string   `json:"pl"`
+		ResettablePL string   `json:"resettablePL"`
+		TradeIDs     []string `json:"tradeIDs,omitempty"`
+		Units        string   `json:"units"`
+	} `json:"long,omitempty"`
+	PL           string `json:"pl"`
+	ResettablePL string `json:"resettablePL"`
+	Short        struct {
+		AveragePrice string   `json:"averagePrice,omitempty"`
+		PL           string   `json:"pl"`
+		ResettablePL string   `json:"resettablePL"`
+		TradeIDs     []string `json:"tradeIDs,omitempty"`
+		Units        string   `json:"units"`
+	} `json:"short,omitempty"`
+}
+
+/*
+embedded struct for AccountChange
+
+endpoint: /v3/accounts/{accountID}/changes
+*/
+type OrdersFilled struct {
+	CreateTime           string `json:"createTime"`
+	FilledTime           string `json:"filledTime"`
+	FillingTransactionID string `json:"fillingTransactionID"`
+	ID                   string `json:"id"`
+	Instrument           string `json:"instrument"`
+	PositionFill         string `json:"positionFill"`
+	State                string `json:"state"`
+	TimeInForce          string `json:"timeInForce"`
+	TradeOpenedID        string `json:"tradeOpenedID"`
+	Type                 string `json:"type"`
+	Units                string `json:"units"`
+}
+
+/*
+embedded struct for AccountChange
+
+endpoint: /v3/accounts/{accountID}/changes
+*/
+type State struct {
+	NAV                        string           `json:"NAV"`
+	MarginAvailable            string           `json:"marginAvailable"`
+	MarginCloseoutMarginUsed   string           `json:"marginCloseoutMarginUsed"`
+	MarginCloseoutNAV          string           `json:"marginCloseoutNAV"`
+	MarginCloseoutPercent      string           `json:"marginCloseoutPercent"`
+	MarginCloseoutUnrealizedPL string           `json:"marginCloseoutUnrealizedPL"`
+	MarginUsed                 string           `json:"marginUsed"`
+	Orders                     []string         `json:"orders,omitempty"` // incomplete, wrong type
+	PositionValue              string           `json:"positionValue"`
+	Positions                  []StatePositions `json:"positions,omitempty"` // incomplete, wrong type
+	Trades                     []StateTrades    `json:"trades,omitempty"`    // incomplete, wrong type
+	UnrealizedPL               string           `json:"unrealizedPL"`
+	WithdrawalLimit            string           `json:"withdrawalLimit"`
+}
+
+/*
+embedded struct for AccountChange
+
+endpoint: /v3/accounts/{accountID}/changes
+*/
+type StatePositions struct {
+	Instrument        string `json:"instrument"`
+	LongUnrealizedPL  string `json:"longUnrealizedPL"`
+	NetUnrealizedPL   string `json:"netUnrealizedPL"`
+	ShortUnrealizedPL string `json:"shortUnrealizedPL"`
+}
+
+/*
+embedded struct for AccountChange
+
+endpoint: /v3/accounts/{accountID}/changes
+*/
+type StateTrades struct {
+	ID           string `json:"id"`
+	UnrealizedPL string `json:"unrealizedPL"`
+}
+
+/*
+struct for unmarshalling error messages returned from Oanda's REST-V20 API
+*/
+type ErrorMsg struct {
+	ErrorMessage string `json:"errorMessage"`
+	ErrorCode    string `json:"errorCode"`
+}
+
+type error interface {
+	Error() string
+}
+
+func (m *ErrorMsg) Error() string {
+	return m.ErrorMessage
 }
 
 /*
@@ -436,12 +598,73 @@ func GetAccountInstru(id string, token string) (*AccountInstru, error) {
 		log.Fatalln(err)
 	}
 
-	var AccountInstru AccountInstru
-	err = json.Unmarshal(body, &AccountInstru)
+	var accountInstru AccountInstru
+	err = json.Unmarshal(body, &accountInstru)
 
 	if err != nil {
 		return nil, fmt.Errorf("error unmarshaling json: %s", err.Error())
 	}
 
-	return &AccountInstru, nil
+	return &accountInstru, nil
+}
+
+/*
+GetAccountID function will return an account for its current state and changes since a specified transactionID.
+
+For more info go to Oandas documentation for [Account Endpoints].
+
+[Account Endpoints]: https://developer.oanda.com/rest-live-v20/account-ep/
+*/
+func GetAccountChanges(id string, transactionID string, token string) (*AccountChange, error) {
+	url := "https://api-fxpractice.oanda.com/v3/accounts/" + id + "/changes"
+
+	client := &http.Client{
+		Timeout: time.Second * 10,
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error: %s", err.Error())
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("Authorization", "Bearer "+token)
+	req.Header.Add("Accept-Datetime-Format", "RFC3339")
+	// query parameters for get request
+	q := req.URL.Query()
+	q.Add("sinceTransactionID", transactionID)
+	req.URL.RawQuery = q.Encode()
+
+	response, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error: %s", err.Error())
+	} else if response.StatusCode == 400 {
+		body, err := io.ReadAll(response.Body)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		var errorMsg ErrorMsg
+		err = json.Unmarshal(body, &errorMsg)
+		if err != nil {
+			return nil, fmt.Errorf("error unmarshaling json: %s", err.Error())
+		}
+
+		return nil, &ErrorMsg{}
+	}
+	defer response.Body.Close()
+
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	var accountChange AccountChange
+	err = json.Unmarshal(body, &accountChange)
+
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshaling json: %s", err.Error())
+	}
+
+	return &accountChange, nil
 }

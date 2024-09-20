@@ -79,3 +79,20 @@ func Example_accountInstruments() {
 	// print one possible instrument that you can trade on Oanda
 	fmt.Println(instruments.List[0].Name)
 }
+
+func Example_accountChanges() {
+	// Get ID and Token for Oanda Account
+	creds, err := oanda.GetAllIdToken(accountJSON, false)
+	id, token := creds.Account["primary"].ID, creds.Account["primary"].Token
+	if err != nil {
+		log.Fatalf("error during GetAllIdToken(): %v", err)
+	}
+
+	changes, err := oanda.GetAccountChanges(id, "256", token)
+	if err != nil {
+		log.Fatalf("error during GetAccountInstru(): %v", err)
+	}
+
+	// print positions
+	fmt.Println(changes.Changes.Positions)
+}
