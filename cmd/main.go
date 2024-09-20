@@ -113,11 +113,19 @@ func main() {
 
 	changes, err := oanda.GetAccountChanges(accounts.Account[0].ID, "256", token) // accounts.Account[0].ID
 	if err != nil {
-		log.Print(err)
-		log.Fatalf("error during GetAccountInstru(): %v", err)
+		checkErr, ok := err.(*oanda.ErrorMsg)
+		if ok {
+			if !checkErr.Empty() {
+				log.Print("could not handle request to changes url")
+			}
+		} else {
+			log.Fatalf("error during GetAccountInstru(): %v", err)
+		}
 	} else {
-		for _, position := range changes.Changes.Positions {
-			fmt.Println(position.Instrument)
+		if len(changes.Changes.Positions) > 0 {
+			for _, position := range changes.Changes.Positions {
+				fmt.Println(position.Instrument)
+			}
 		}
 		fmt.Printf("Margin Available: %s\n", changes.State.MarginAvailable)
 	}

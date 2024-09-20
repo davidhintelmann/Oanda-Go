@@ -396,15 +396,18 @@ struct for unmarshalling error messages returned from Oanda's REST-V20 API
 */
 type ErrorMsg struct {
 	ErrorMessage string `json:"errorMessage"`
-	ErrorCode    string `json:"errorCode"`
-}
-
-type error interface {
-	Error() string
 }
 
 func (m *ErrorMsg) Error() string {
 	return m.ErrorMessage
+}
+
+func (m *ErrorMsg) Empty() bool {
+	if len(m.ErrorMessage) > 0 {
+		return false
+	} else {
+		return true
+	}
 }
 
 /*
@@ -650,7 +653,7 @@ func GetAccountChanges(id string, transactionID string, token string) (*AccountC
 			return nil, fmt.Errorf("error unmarshaling json: %s", err.Error())
 		}
 
-		return nil, &ErrorMsg{}
+		return nil, &ErrorMsg{ErrorMessage: errorMsg.ErrorMessage}
 	}
 	defer response.Body.Close()
 

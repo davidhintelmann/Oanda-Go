@@ -260,7 +260,7 @@ func GetCandlesBA(instrument, granularity, token string, display bool) (*Metadat
 	req.URL.RawQuery = q.Encode()
 
 	// print string to console for debugging
-	fmt.Println(req.URL.String())
+	// fmt.Println(req.URL.String())
 
 	response, err := client.Do(req)
 	if err != nil {
